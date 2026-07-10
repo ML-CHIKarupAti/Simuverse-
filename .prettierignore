@@ -1,0 +1,11 @@
+# Owner-authored documents — never reformat (see STOPandASK.md)
+CLAUDE.md
+PLAN.md
+PROGRESS.md
+STOPandASK.md
+README.md
+
+# Generated / vendored
+dist
+node_modules
+pnpm-lock.yaml
