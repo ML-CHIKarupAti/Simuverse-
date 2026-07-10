@@ -3,18 +3,19 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-Step **0.3 — DONE.** Next: Step **0.4** (units layer) — not started.
+Step **0.4 — DONE.** Next: Step **0.5** (command bus) — not started.
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
 - 0.2 Folder structure — created src/{core,units,commands,engine,scene,state,render,ui} (.gitkeep placeholders); tests/ already existed.
 - 0.3 Scene schema — src/scene/schema.ts (zod v4, strict objects, inferred types) + src/scene/serialize.ts (pretty export + validated parse); round-trip + validation tests.
+- 0.4 Units layer — src/units/units.ts (§5 constants G=4π²/c/AU/Msun/yr, UNIT_TO_CANONICAL derived from base constants, toCanonical/fromCanonical, 3-sig-fig formatter); tests for km↔AU, kg↔M☉, days/s, velocity (Earth≈2π), r_s(1M☉)≈2.95km.
 
 ## Deployed URL
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 2 files, 7 tests (smoke + scene-schema round-trip/validation). `pnpm lint` and `pnpm build` also green.
+`pnpm test` green — 3 files, 20 tests (smoke + scene-schema + units). `pnpm lint` and `pnpm build` also green.
 
 ## Known issues / deviations from PLAN
 - Template shipped **oxlint** (Vite 8 default) with no Prettier; replaced with locked-stack **ESLint + Prettier** per §3. Compliance, not a deviation.
@@ -30,9 +31,9 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 (none)
 
 ## Next actions
-1. Step 0.4 — units layer: src/units/units.ts with §5 constants, toCanonical/fromCanonical, 3-sig-fig display formatter. Tests: km↔AU, kg↔M☉ round-trips; r_s(1 M☉) ≈ 2.95 km.
+1. Step 0.5 — command bus: Command type, registry, dispatch pipeline (validate → apply → emit events), event subscription API, undo stack of inverse commands (insert↔remove, set↔set-previous). Per §8 (0.5).
 2. Owner: resolve the radius-unit design tension above before/at step 0.7 (catalog).
 3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push.
 
 ## Session log (newest first — one line per session)
-- 2026-07-10: Steps 0.1 (scaffold, deployed) + 0.2 (folders) + 0.3 (scene schema, zod) done; flagged radius-unit tension.
+- 2026-07-10: Steps 0.1 (scaffold, deployed) + 0.2 (folders) + 0.3 (scene schema, zod) + 0.4 (units layer) done; flagged radius-unit tension.
