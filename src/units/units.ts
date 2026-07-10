@@ -20,6 +20,7 @@ export const AU_IN_KM = 1.495978707e8 // 1 AU = 1.495978707×10¹¹ m = ×10⁸ 
 export const MSUN_IN_KG = 1.98892e30 // 1 Msun in kg
 export const YR_IN_S = 3.15576e7 // 1 Julian year in seconds
 export const DAY_IN_S = 86400 // 1 day in seconds
+export const RSUN_IN_M = 6.957e8 // 1 solar radius in metres (PLAN §7 star radius)
 
 // --- Unit → canonical factors ----------------------------------------------
 // Multiply a value in `unit` by its factor to get the canonical value for that
@@ -31,6 +32,8 @@ export const UNIT_TO_CANONICAL: Record<Unit, number> = {
   // length → AU
   AU: 1,
   km: 1 / AU_IN_KM,
+  m: 1 / (AU_IN_KM * 1000), // 1 AU = AU_IN_KM·1000 metres
+  Rsun: RSUN_IN_M / (AU_IN_KM * 1000), // solar radius via metres → AU
   // mass → Msun
   Msun: 1,
   kg: 1 / MSUN_IN_KG,

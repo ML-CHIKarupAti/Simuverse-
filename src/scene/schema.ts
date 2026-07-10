@@ -17,6 +17,8 @@ export const UnitSchema = z.enum([
   'Msun',
   'yr',
   'km',
+  'm',
+  'Rsun',
   'kg',
   's',
   'days',

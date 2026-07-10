@@ -98,7 +98,8 @@ describe('scene schema validation', () => {
 
   it('rejects an unknown unit', () => {
     const doc = makeDoc()
-    ;(doc.objects[0].params.radius as { unit: string }).unit = 'm'
+    // 'parsec' is not in the §5 unit enum ('m' and 'Rsun' now are — Option B).
+    ;(doc.objects[0].params.radius as { unit: string }).unit = 'parsec'
     expect(SceneDocSchema.safeParse(doc).success).toBe(false)
   })
 

@@ -17,7 +17,7 @@ Step **0.6 — DONE.** Next: Step **0.7** (catalog) — not started.
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 5 files, 55 tests (smoke + scene-schema + units + command-bus + parser). `pnpm lint` and `pnpm build` also green.
+`pnpm test` green — 5 files, 59 tests (smoke + scene-schema + units + command-bus + parser). `pnpm lint` and `pnpm build` also green.
 
 ## Known issues / deviations from PLAN
 - Template shipped **oxlint** (Vite 8 default) with no Prettier; replaced with locked-stack **ESLint + Prettier** per §3. Compliance, not a deviation.
@@ -27,15 +27,14 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 - `build` script uses `tsc -b` (solution build) rather than PLAN's literal `tsc`, required by the template's project-reference tsconfigs. Same intent.
 - Vercel deploy is CLI-based (manual `vercel --prod`). Git-connected auto-deploy on push is NOT yet configured (needs Vercel dashboard: connect the GitHub repo). Owner decision.
 - Rule conflict to resolve: STOPandASK says "you may only append to PROGRESS.md" but CLAUDE.md + this file's header say to update/prune it. Updated in place this session per the dashboard's intent — owner please confirm.
-- **DESIGN TENSION for owner (from 0.3):** the §5 unit enum is (AU, Msun, yr, km, kg, s, days, m/s, km/s) — it has NO plain metres `m` and no `R☉`. But §7 catalog specifies star radius as "1 R☉ (6.957×10⁸ m)". So there's no legal unit to store a radius in metres or solar radii. Schema was built to §5 as written (no `m`/`R☉`). Options when we reach the catalog (0.7): (a) store radius in `km`, (b) add `m`/`Rsun` to the enum (schema change → needs owner sign-off per STOPandASK #2/#3). Not blocking 0.3. Please advise.
+- ~~DESIGN TENSION (radius unit vs §5 enum)~~ **RESOLVED 2026-07-10 as Option B (owner-approved):** added `m` (metres) and `Rsun` (solar radii) to UnitSchema and to UNIT_TO_CANONICAL. `Rsun` derived from `RSUN_IN_M = 6.957×10⁸ m` through the existing `AU_IN_KM` (no separate AU constant). Round-trip tests added for both. One scene-schema test fixture updated (it had used `'m'` as its "unknown unit" example → now `'parsec'`).
 
 ## Decisions made mid-build (owner-approved changes to PLAN)
 (none)
 
 ## Next actions
-1. Step 0.7 — catalog: object defaults + fidelity maps + derived-value definitions (formula string, KaTeX string, compute fn) per §7. NOTE: this is where the radius-unit tension bites — need owner's call (store radius in km vs add m/Rsun to enum).
-2. Owner: resolve the radius-unit design tension (see Known issues) — needed to start 0.7.
-3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push.
+1. Step 0.7 — catalog: object defaults + fidelity maps + derived-value definitions (formula string, KaTeX string, compute fn) per §7. Radius-unit tension now resolved (Option B) — store star radius as `Rsun`/`m`.
+2. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push.
 
 ## Session log (newest first — one line per session)
-- 2026-07-10: Steps 0.1–0.6 done (scaffold+deploy, folders, scene schema, units, command bus, parser); radius-unit tension still open, bites at 0.7.
+- 2026-07-10: Steps 0.1–0.6 done (scaffold+deploy, folders, scene schema, units, command bus, parser); radius-unit tension resolved as Option B (added m + Rsun units).

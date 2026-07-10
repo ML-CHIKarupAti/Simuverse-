@@ -32,6 +32,27 @@ describe('length: km ↔ AU', () => {
   })
 })
 
+describe('length: m and Rsun (Option B additions)', () => {
+  it('1 AU is AU_IN_KM·1000 metres', () => {
+    expect(fromCanonical(toCanonical({ value: 1, unit: 'AU' }), 'm')).toBeCloseTo(
+      AU_IN_KM * 1000,
+      -3,
+    )
+  })
+  it('round-trips 1 AU → m → AU', () => {
+    const m = fromCanonical(toCanonical({ value: 1, unit: 'AU' }), 'm')
+    expect(toCanonical({ value: m, unit: 'm' })).toBeCloseTo(1, 12)
+  })
+  it('1 R☉ ≈ 6.957×10⁵ km', () => {
+    const km = fromCanonical(toCanonical({ value: 1, unit: 'Rsun' }), 'km')
+    expect(km).toBeCloseTo(6.957e5, 0)
+  })
+  it('round-trips 1 R☉ → AU → R☉', () => {
+    const au = toCanonical({ value: 1, unit: 'Rsun' })
+    expect(fromCanonical(au, 'Rsun')).toBeCloseTo(1, 12)
+  })
+})
+
 describe('mass: kg ↔ M☉', () => {
   it('1 M☉ is MSUN_IN_KG kilograms', () => {
     expect(
