@@ -3,7 +3,7 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-Step **0.5 — DONE.** Next: Step **0.6** (parser) — not started.
+Step **0.6 — DONE.** Next: Step **0.7** (catalog) — not started.
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
@@ -11,12 +11,13 @@ Step **0.5 — DONE.** Next: Step **0.6** (parser) — not started.
 - 0.3 Scene schema — src/scene/schema.ts (zod v4, strict objects, inferred types) + src/scene/serialize.ts (pretty export + validated parse); round-trip + validation tests.
 - 0.4 Units layer — src/units/units.ts (§5 constants G=4π²/c/AU/Msun/yr, UNIT_TO_CANONICAL derived from base constants, toCanonical/fromCanonical, 3-sig-fig formatter); tests for km↔AU, kg↔M☉, days/s, velocity (Earth≈2π), r_s(1M☉)≈2.95km.
 - 0.5 Command bus — src/commands/registry.ts (Command/BusEvent types, pure insert/remove/set handlers with inverses, exhaustive applyCommand, CommandError) + src/commands/bus.ts (CommandBus: dispatch/subscribe/undo/redo, immutable, redo-clear on new action); insert→undo exact + set/remove inverse + error + subscription tests.
+- 0.6 Parser — src/commands/parser.ts (parseCommand → ParsedCommand AST; \/bare prefixes, verb, positional args, key=value with scalar/tuple/word values, number+unit suffixes incl. slash units; bracket-aware tokenizer tolerates spaces in tuples; ParseError names bad token). SYNTAX-ONLY: units kept as raw strings (accepts 1Me etc.), enum validation deferred to the Quantity boundary. 24 tests.
 
 ## Deployed URL
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 4 files, 31 tests (smoke + scene-schema + units + command-bus). `pnpm lint` and `pnpm build` also green.
+`pnpm test` green — 5 files, 55 tests (smoke + scene-schema + units + command-bus + parser). `pnpm lint` and `pnpm build` also green.
 
 ## Known issues / deviations from PLAN
 - Template shipped **oxlint** (Vite 8 default) with no Prettier; replaced with locked-stack **ESLint + Prettier** per §3. Compliance, not a deviation.
@@ -32,9 +33,9 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 (none)
 
 ## Next actions
-1. Step 0.6 — parser: tokenize `\verb target k=v` incl. tuples and unit suffixes (10Msun, 1AU, 5km/s); clear token-naming errors. Produces Commands for the bus. Per §7 grammar + §8 (0.6).
-2. Owner: resolve the radius-unit design tension above before/at step 0.7 (catalog).
+1. Step 0.7 — catalog: object defaults + fidelity maps + derived-value definitions (formula string, KaTeX string, compute fn) per §7. NOTE: this is where the radius-unit tension bites — need owner's call (store radius in km vs add m/Rsun to enum).
+2. Owner: resolve the radius-unit design tension (see Known issues) — needed to start 0.7.
 3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push.
 
 ## Session log (newest first — one line per session)
-- 2026-07-10: Steps 0.1–0.5 done (scaffold+deploy, folders, scene schema, units, command bus); flagged radius-unit tension.
+- 2026-07-10: Steps 0.1–0.6 done (scaffold+deploy, folders, scene schema, units, command bus, parser); radius-unit tension still open, bites at 0.7.
