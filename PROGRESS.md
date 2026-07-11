@@ -3,7 +3,7 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-**PHASE 2 IN PROGRESS.** Step **2.1 (render scaffold) — DONE (code + deployed)**, pending owner's visual/console eyeball on the deploy. Next: **2.2 (frame bridge — zustand frameStore, interpolate worker frames in useFrame)**.
+**PHASE 2 IN PROGRESS.** Steps **2.1–2.2 DONE (code + deployed).** Next: **2.3 (scale + floating origin — RENDER_SCALE 10 units/AU, rebase when camera target >5000 units, visual body radii)**.
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
@@ -25,12 +25,13 @@ Living build state. Claude Code: read this FIRST every session, update it LAST e
 - 1.8 Validation harness — src/engine/validation.ts (source of truth: measureKeplerPeriod via 2π angle-sweep+interp, measureDrift(integrator,orbits), determinismHashes via FNV-1a, runValidations()→rows, toValidationMarkdown()). RESULTS (all PASS, big margins): Kepler err 4.97e-8%; Yoshida4 ΔE 1.02e-13 (<1e-6); Verlet ΔE 7.07e-10 (<1e-4); ΔL ~1.5e-13 both (<1e-9); determinism hashes identical. VALIDATION.md committed; added to .prettierignore.
 - 1.9 Bench — validation.ts measureBenchmark(500 bodies, seeded mulberry32, 150ms time-budget, yoshida4): dev machine ~225–240 steps/sec ≈ 0.02–0.023 sim-yr/sec (brute-force O(n²), single-thread JS; few-body scenes are orders of magnitude faster). Recorded in VALIDATION.md Performance section. Test asserts a GENEROUS regression floor (>30 steps/sec) to avoid hardware flakiness. IMPORTANT (churn fix): VALIDATION.md is now written ONLY when env UPDATE_VALIDATION is set — routine `pnpm test` asserts but never rewrites the file (verified md5 unchanged). Regenerate via `UPDATE_VALIDATION=1 pnpm exec vitest run tests/validation.test.ts`.
 - 2.1 Render scaffold — installed three 0.185 + @react-three/fiber 9.6 + drei 10.7 + postprocessing 3.0 (all §3-allowed). src/render/CanvasRoot.tsx: full-bleed fixed <Canvas> (dpr [1,2], antialias), scene background #05070B (darker than chrome #0B0E14), drei OrbitControls (makeDefault, damped: dampingFactor 0.08 — weighty). App.tsx now renders just the canvas; index.css reset to full-viewport dark; removed Vite template cruft (App.css, template imgs, icons.svg); index.html title → Simuverse. Deployed to https://simuverse-snowy.vercel.app (HTTP 200). Rendering step = NO vitest; MANUAL check pending (60fps/console warnings — owner eyeball).
+- 2.2 Frame bridge — installed zustand 5 (was never installed; §3-allowed). src/state/frameStore.ts: useFrameStore (prev/next frames + arrivals + order, pushFrame shifts next→prev) + PURE lerpPositions/interpolationAlpha (render one physics-interval behind, alpha=(now−nextArrival)/span clamped; snap on null-prev or body-count change) + renderPositions singleton (imperative output, kept out of zustand so 60/s frames cause no React re-renders). src/render/FrameBridge.tsx (useFrame → interpolate into renderPositions). src/render/useEngineDemo.ts = TEMPORARY Phase-2 dev scene (star + 3 circular planets, real EngineClient worker, timescale 0.5) so there's live motion to build against — replaced by presets/commands later. Wired into CanvasRoot. Vite emits the worker chunk (engine.worker-*.js) — worker pipeline builds+deploys. 9 frame-store tests. NO VISIBLE output yet (meshes consume renderPositions at 2.4); smoothness manually verifiable then.
 
 ## Deployed URL
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 16 files, 161 tests. `pnpm lint` and `pnpm build` also green (build warns on bundle >500kB — three.js, expected). VALIDATION.md: 6 vectors PASS + bench recorded (written only under UPDATE_VALIDATION=1, so no routine churn). Rendering (2.x) has no unit tests — manual deploy checks.
+`pnpm test` green — 17 files, 170 tests (+ frame-store). `pnpm lint` and `pnpm build` also green (build warns on bundle >500kB — three.js, expected). VALIDATION.md: 6 vectors PASS + bench recorded (written only under UPDATE_VALIDATION=1, so no routine churn). Rendering (2.x) visuals are manual deploy checks; pure logic (interpolation) is unit-tested.
 
 ## Known issues / deviations from PLAN
 - BUNDLE SIZE: main JS ~1.08MB raw (~300kB gzip) now that three.js/drei are in. Vite warns >500kB. Fine for now; consider lazy-loading the canvas / code-splitting in Phase 6 QA (6.3).
@@ -51,10 +52,9 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 (none)
 
 ## Next actions
-1. **Step 2.2 — frame bridge:** src/state/frameStore.ts (zustand) holds the two most recent worker frames (prev, next) + sim times; render loop (useFrame) interpolates each body's position linearly using the accumulator alpha. Accept (manual): with engine running, logged render positions change smoothly, no stutter when physics rate ≠ frame rate.
-2. Phase 2 continues 2.3 scale/floating origin → 2.4 body meshes+blackbody → 2.5 starfield → 2.6 trails → 2.7 postprocessing/render modes → 2.8 camera focus. Owner cares a LOT about visual quality — high bar: real starfield depth, tuned (not blown-out) bloom, weighty damped camera, physics-driven trails, real blackbody colors.
-3. Phase 1 acceptance's "worker runs Sun–Earth–Moon from the command bus with live drift" fully lands once the canvas exists (2.x) — headless engine + validation already satisfy the automated half.
-4. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
+1. **Step 2.3 — scale + floating origin:** src/render/scale.ts — RENDER_SCALE = 10 render units/AU; floating origin (rebase camera + objects when target > 5000 units from origin, subtract offset); visual body radii (display-only, Methods labels "display scaling — illustrative"): star 1.4·(M/M☉)^0.25, planet 0.5·(M/M⊕)^0.15, moon 0.3, blackhole 1.0·(M/10M☉)^0.25 render units. Accept (manual): object at 100 AU shows no jitter when camera orbits.
+2. Phase 2 continues 2.4 body meshes+blackbody → 2.5 starfield → 2.6 trails → 2.7 postprocessing/render modes → 2.8 camera focus. Owner cares a LOT about visual quality — high bar: real starfield depth, tuned (not blown-out) bloom, weighty damped camera, physics-driven trails, real blackbody colors. **2.4 is where the frame bridge (2.2) becomes VISIBLE — verify interpolation smoothness there.**
+3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
 
 ## Session log (newest first — one line per session)
 - 2026-07-11: Recovered context after session loss (folder renamed Simuverse- → Simuverse). **PHASE 1 COMPLETE** (steps 1.1–1.9): full N-body engine — protocol/core/worker/client, SoA state, softened forces, Verlet + Yoshida4, diagnostics, sim loop with honest timescale capping, formal validation (all 6 vectors PASS, big margins), 500-body bench. 161 tests. Started Phase 2: 2.1 render scaffold (three/r3f/drei canvas) deployed. Toolchain changed mid-session (Node→system v24.18, vercel reinstalled, auth persisted). Quality discussion: physics validated (not vibes); "fabric of space" = Phase 2 canvas done to a high bar. Owner: prioritize quality over deadline, stay on track.

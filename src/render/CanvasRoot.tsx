@@ -1,11 +1,14 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
+import { FrameBridge } from './FrameBridge'
+import { useEngineDemo } from './useEngineDemo'
 
 // Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI.
 // Empty scene for now; bodies (2.4), starfield (2.5) and trails (2.6) fill it
 // in later. The clear color #05070B is deliberately DARKER than the chrome
 // (#0B0E14) so the starfield reads as the deepest layer, not the panels.
 export function CanvasRoot() {
+  useEngineDemo() // temporary Phase-2 dev scene (see useEngineDemo)
   return (
     <Canvas
       style={{ position: 'fixed', inset: 0 }}
@@ -23,6 +26,7 @@ export function CanvasRoot() {
         zoomSpeed={0.8}
         panSpeed={0.6}
       />
+      <FrameBridge />
     </Canvas>
   )
 }
