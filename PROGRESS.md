@@ -3,7 +3,7 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-**Phase 1 IN PROGRESS.** Steps **1.1–1.7 DONE.** Next: **1.8 (validation harness → VALIDATION.md: Kepler period <0.01%, drift thresholds over 100 orbits, determinism hash)**.
+**Phase 1 IN PROGRESS.** Steps **1.1–1.8 DONE.** Next: **1.9 (bench — 500 random bodies steps/sec, record in VALIDATION.md)**. After 1.9, Phase 1 complete → Phase 2 (canvas/cinematic).
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
@@ -22,12 +22,13 @@ Living build state. Claude Code: read this FIRST every session, update it LAST e
 - 1.5 Yoshida 4th-order — added yoshida4Step to integrators.ts: composition of 3 verletStep calls scaled by (w₁,w₀,w₁), w₁=1/(2−2^(1/3)), w₀=−2^(1/3)/(2−2^(1/3)) (2w₁+w₀=1 exactly, tested). 6 tests incl. a head-to-head energy-drift comparison vs Verlet on an ECCENTRIC e=0.6 orbit (a circular orbit is a poor test — symmetry cancels truncation error into floating-point noise for both methods; matches why PLAN §1.8 itself validates on an eccentric orbit). Measured: Verlet 2.78e-13 vs Yoshida4 2.15e-14 over 2 orbits (~13× tighter) — consistent with 1.8's 100-orbit thresholds (verlet<1e-4, yoshida4<1e-6).
 - 1.6 Diagnostics — src/engine/diagnostics.ts: totalEnergy (KE − softened PE, √(r²+ε²) MATCHING the force kernel — else energy would false-drift), angularMomentumVector/Magnitude (Σ m r×v about origin), conserved(), relativeDrift() with zero-baseline→absolute fallback (no NaN/Inf). 10 tests incl. virial E=−GMm/2a, radial→L=0, and an integrated eccentric orbit where the module SEES energyDriftRel<1e-6 & L-drift<1e-9. integrators.test.ts refactored to import totalEnergy (single source of truth).
 - 1.7 Sim loop — engine.core `advance(state, realSeconds)`: fixed-timestep accumulator (owed = realSeconds×timescale consumed in whole dt steps, remainder carries → timescale-exact, frame-rate independent). Substep cap MAX_SUBSTEPS=5000/tick → on cap reports honest effectiveTimescale + capped=true (added to DiagnosticsPayload) and drops backlog (no spiral). Diagnostics every DIAGNOSTICS_INTERVAL=100 steps (drift vs init baseline). Also: init/body-changes now PRIME forces (computeForces) + reset baseline; stepOnce is a REAL integrator step now; integratorStep(config.integrator,…) dispatch added; state.ts cloneStore (clone-once-per-tick, mutate in place). engine.worker.ts drives it via setInterval(16ms), resetting lastTime each tick so a pause never becomes one giant catch-up step. 9 sim-loop tests incl. advance≡raw integrator (byte-identical), cap honesty, accumulator carry, diagnostics cadence.
+- 1.8 Validation harness — src/engine/validation.ts (source of truth: measureKeplerPeriod via 2π angle-sweep+interp, measureDrift(integrator,orbits), determinismHashes via FNV-1a, runValidations()→rows, toValidationMarkdown()). tests/validation.test.ts runs once in beforeAll, asserts all 6 vectors, writes VALIDATION.md (always — even a fail is recorded honestly). RESULTS (all PASS, big margins): Kepler err 4.97e-8%; Yoshida4 ΔE 1.02e-13 (<1e-6); Verlet ΔE 7.07e-10 (<1e-4); ΔL ~1.5e-13 both (<1e-9); determinism hashes identical. VALIDATION.md committed; added to .prettierignore.
 
 ## Deployed URL
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 15 files, 153 tests (+ sim-loop). `pnpm lint` and `pnpm build` also green.
+`pnpm test` green — 16 files, 160 tests (+ validation). `pnpm lint` and `pnpm build` also green. VALIDATION.md auto-generated, all 6 vectors PASS.
 
 ## Known issues / deviations from PLAN
 - Template shipped **oxlint** (Vite 8 default) with no Prettier; replaced with locked-stack **ESLint + Prettier** per §3. Compliance, not a deviation.
@@ -45,11 +46,12 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 (none)
 
 ## Next actions
-1. **Step 1.8 — validation harness:** vitest that (a) circular two-body a=1AU/1M☉ → measured period within 0.01% of 1yr; (b) eccentric e=0.6, 100 orbits → |ΔE/E₀|<1e-6 (yoshida4) & <1e-4 (verlet), |ΔL/L₀|<1e-9; (c) determinism: two runs → identical Float64 (hash). Write results into VALIDATION.md (table: test, target, measured, pass). Likely needs a shared source-of-truth for the results consumed by both the test and (later) the Methods page 6.2.
-2. Then 1.9 (bench: 500 random bodies steps/sec → VALIDATION.md).
-3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
+1. **Step 1.9 — bench (Phase 1 final):** 500 random bodies, measure steps/sec; assert comfortably real-time at dt=1e-4; record the number in VALIDATION.md. NOTE: bench timing is NON-deterministic → will cause VALIDATION.md churn on each run. Plan: put the bench figure in a clearly-labeled separate section, and/or round/bucket it, and/or gate the write so routine `pnpm test` doesn't rewrite the perf number every run. Decide the cleanest approach when building 1.9.
+2. After 1.9 → **Phase 1 COMPLETE.** Phase 1 acceptance also wants "worker runs Sun–Earth–Moon from the command bus with live drift diagnostics" — that's a manual/deploy check that fully lands once Phase 2 canvas exists; the headless engine + validation already satisfy the automated half.
+3. Then **Phase 2** (canvas + cinematic). Owner cares a lot about visual quality here — hold it to a high bar (real starfield depth, tuned bloom, weighty camera, physics-driven trails, blackbody colors).
+4. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
 
 ## Session log (newest first — one line per session)
-- 2026-07-11: Recovered context after session loss (folder renamed Simuverse- → Simuverse). Steps 1.1–1.7 done — engine now actually simulates (sim loop wired: play animates, honest timescale capping, live drift diagnostics). 153 tests. Quality discussion with owner: physics is validated (not vibes); "fabric of space" = the actual Phase 2 canvas/starfield/bodies/trails done to a high bar, not a new grid-mesh feature. Owner: prioritize quality over deadline, stay on track through phases in order.
+- 2026-07-11: Recovered context after session loss (folder renamed Simuverse- → Simuverse). Steps 1.1–1.8 done — engine simulates + is formally validated (VALIDATION.md generated, all 6 vectors PASS with big margins). 160 tests. Quality discussion with owner: physics is validated (not vibes); "fabric of space" = the actual Phase 2 canvas/starfield/bodies/trails done to a high bar, not a new grid-mesh feature. Owner: prioritize quality over deadline, stay on track through phases in order.
 - 2026-07-10 (session 2): Phase 0 COMPLETE. Resolved OPEN Q1 (Option A: vis-viva insert glue built as capstone in src/commands/insert.ts) and OPEN Q2 (objectRemoved kind added to LogEventKindSchema). Phase 0 acceptance test comprehensive (insert.test.ts:41–78). Ready for Phase 1.
 - 2026-07-10: Steps 0.1–0.8 done — Phase 0 sub-steps complete (75 tests green). Two open questions flagged: vis-viva insert glue (Q1, gates Phase 0 acceptance) and objectRemoved log kind (Q2).
