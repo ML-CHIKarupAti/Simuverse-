@@ -6,6 +6,7 @@ import {
   YOSHIDA_W0,
 } from '../src/engine/integrators'
 import { computeForces } from '../src/engine/forces'
+import { totalEnergy } from '../src/engine/diagnostics'
 import * as bodyStore from '../src/engine/state'
 import type { BodyArrays } from '../src/engine/state'
 import type { EngineBody } from '../src/engine/protocol'
@@ -55,28 +56,6 @@ function planetRadius(s: BodyArrays): number {
   const dy = s.pos[4] - s.pos[1]
   const dz = s.pos[5] - s.pos[2]
   return Math.sqrt(dx * dx + dy * dy + dz * dz)
-}
-
-function totalEnergy(s: BodyArrays, softening: number): number {
-  let ke = 0
-  for (let i = 0; i < s.n; i++) {
-    const vx = s.vel[3 * i]
-    const vy = s.vel[3 * i + 1]
-    const vz = s.vel[3 * i + 2]
-    ke += 0.5 * s.mass[i] * (vx * vx + vy * vy + vz * vz)
-  }
-  let pe = 0
-  const eps2 = softening * softening
-  for (let i = 0; i < s.n; i++) {
-    for (let j = i + 1; j < s.n; j++) {
-      const dx = s.pos[3 * j] - s.pos[3 * i]
-      const dy = s.pos[3 * j + 1] - s.pos[3 * i + 1]
-      const dz = s.pos[3 * j + 2] - s.pos[3 * i + 2]
-      const r = Math.sqrt(dx * dx + dy * dy + dz * dz + eps2)
-      pe -= (G * s.mass[i] * s.mass[j]) / r
-    }
-  }
-  return ke + pe
 }
 
 function totalMomentum(s: BodyArrays): [number, number, number] {

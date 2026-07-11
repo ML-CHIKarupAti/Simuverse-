@@ -3,7 +3,7 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-**Phase 1 IN PROGRESS.** Steps **1.1–1.5 DONE.** Next: **1.6 (diagnostics — fill in energy/angular-momentum drift computation)**.
+**Phase 1 IN PROGRESS.** Steps **1.1–1.6 DONE.** Next: **1.7 (sim loop — fixed-timestep accumulator driven by timescale; wire integrator dispatch + diagnostics emission every N≈100 steps)**.
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
@@ -20,12 +20,13 @@ Living build state. Claude Code: read this FIRST every session, update it LAST e
 - 1.3 Force kernel — src/engine/forces.ts: computeAccelerations(n,mass,pos,acc,ε,G) pairwise Newtonian + Plummer softening, symmetric (Newton 3rd law) n(n-1)/2 loop, writes acc in place; computeForces(store,ε) convenience. 8 tests: ±G at 1 AU, 1/r² falloff, m·a equal/opposite, superposition cancels, softening caps the 1/r² singularity.
 - 1.4 Velocity-Verlet — src/engine/integrators.ts: verletStep(store,dt,ε,G) KDK (half-kick/drift/recompute/half-kick), PRECONDITION store.acc primed (computeForces once), maintains invariant → 1 force-eval/step. 5 tests: circular orbit closes after 1 period, radius stays ~1 AU, energy drift <1e-4 over 2 orbits, momentum conserved, determinism bit-identical.
 - 1.5 Yoshida 4th-order — added yoshida4Step to integrators.ts: composition of 3 verletStep calls scaled by (w₁,w₀,w₁), w₁=1/(2−2^(1/3)), w₀=−2^(1/3)/(2−2^(1/3)) (2w₁+w₀=1 exactly, tested). 6 tests incl. a head-to-head energy-drift comparison vs Verlet on an ECCENTRIC e=0.6 orbit (a circular orbit is a poor test — symmetry cancels truncation error into floating-point noise for both methods; matches why PLAN §1.8 itself validates on an eccentric orbit). Measured: Verlet 2.78e-13 vs Yoshida4 2.15e-14 over 2 orbits (~13× tighter) — consistent with 1.8's 100-orbit thresholds (verlet<1e-4, yoshida4<1e-6).
+- 1.6 Diagnostics — src/engine/diagnostics.ts: totalEnergy (KE − softened PE, √(r²+ε²) MATCHING the force kernel — else energy would false-drift), angularMomentumVector/Magnitude (Σ m r×v about origin), conserved(), relativeDrift() with zero-baseline→absolute fallback (no NaN/Inf). 10 tests incl. virial E=−GMm/2a, radial→L=0, and an integrated eccentric orbit where the module SEES energyDriftRel<1e-6 & L-drift<1e-9. integrators.test.ts refactored to import totalEnergy (single source of truth).
 
 ## Deployed URL
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 13 files, 134 tests (+ yoshida4 tests in integrators.test.ts). `pnpm lint` and `pnpm build` also green.
+`pnpm test` green — 14 files, 144 tests (+ diagnostics). `pnpm lint` and `pnpm build` also green.
 
 ## Known issues / deviations from PLAN
 - Template shipped **oxlint** (Vite 8 default) with no Prettier; replaced with locked-stack **ESLint + Prettier** per §3. Compliance, not a deviation.
@@ -43,12 +44,11 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 (none)
 
 ## Next actions
-1. **Step 1.6 — diagnostics:** src/engine/diagnostics.ts — total E = Σ½mv² − Σ_{i<j}Gm_im_j/√(r²+ε²); angular momentum L=Σm(r×v); relative drift vs t=0 baseline (energyDriftRel, angularMomentumDriftRel — fields already reserved on DiagnosticsPayload since 1.1). Emitted every N≈100 steps per PLAN.
-2. Then 1.7 (sim loop) → 1.8 (validation → VALIDATION.md) → 1.9 (bench).
-3. NOTE: config.integrator (verlet|yoshida4) is not yet wired into engine.core's stepOnce — both integrator functions exist standalone (matching how 1.3/1.4 were also built and tested independently before wiring). Actual dispatch + acc-priming-after-mutation belongs in 1.7's sim loop, where stepping is unified.
-4. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
+1. **Step 1.7 — sim loop:** fixed-timestep accumulator driven by timescale (sim-yr per real-second); cap substeps/tick (~5,000) and report EFFECTIVE timescale honestly if capped. This is where it all wires together in engine.core: pick integrator from config.integrator (verlet|yoshida4), prime acc on init, step, re-prime acc after body add/remove/update, and emit diagnostics (via diagnostics.conserved + relativeDrift vs an init baseline) every N≈100 steps. play/stepOnce become real motion.
+2. Then 1.8 (validation harness → VALIDATION.md) → 1.9 (bench).
+3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
 
 ## Session log (newest first — one line per session)
-- 2026-07-11: Recovered context after session loss (folder renamed Simuverse- → Simuverse). Steps 1.1–1.5 done. Quality discussion with owner: physics is validated (not vibes), Phase 2 visuals unproven until built — owner confirmed "fabric of space" = the actual Phase 2 canvas/starfield/bodies/trails done to a high bar, not a new grid-mesh feature. Owner: don't worry about deadline, prioritize quality, stay on track through phases in order.
+- 2026-07-11: Recovered context after session loss (folder renamed Simuverse- → Simuverse). Steps 1.1–1.6 done. Quality discussion with owner: physics is validated (not vibes), Phase 2 visuals unproven until built — owner confirmed "fabric of space" = the actual Phase 2 canvas/starfield/bodies/trails done to a high bar, not a new grid-mesh feature. Owner: don't worry about deadline, prioritize quality, stay on track through phases in order.
 - 2026-07-10 (session 2): Phase 0 COMPLETE. Resolved OPEN Q1 (Option A: vis-viva insert glue built as capstone in src/commands/insert.ts) and OPEN Q2 (objectRemoved kind added to LogEventKindSchema). Phase 0 acceptance test comprehensive (insert.test.ts:41–78). Ready for Phase 1.
 - 2026-07-10: Steps 0.1–0.8 done — Phase 0 sub-steps complete (75 tests green). Two open questions flagged: vis-viva insert glue (Q1, gates Phase 0 acceptance) and objectRemoved log kind (Q2).
