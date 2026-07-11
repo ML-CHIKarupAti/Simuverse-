@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { FrameBridge } from './FrameBridge'
+import { FloatingOrigin } from './FloatingOrigin'
 import { useEngineDemo } from './useEngineDemo'
 
 // Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI.
@@ -27,6 +28,7 @@ export function CanvasRoot() {
         panSpeed={0.6}
       />
       <FrameBridge />
+      <FloatingOrigin />
     </Canvas>
   )
 }

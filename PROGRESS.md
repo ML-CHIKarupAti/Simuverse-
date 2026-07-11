@@ -3,7 +3,7 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-**PHASE 2 IN PROGRESS.** Steps **2.1–2.2 DONE (code + deployed).** Next: **2.3 (scale + floating origin — RENDER_SCALE 10 units/AU, rebase when camera target >5000 units, visual body radii)**.
+**PHASE 2 IN PROGRESS.** Steps **2.1–2.3 DONE** (2.3 committed, deploy bundled with 2.4 since it's invisible infra). Next: **2.4 (body meshes + blackbody colors + selection — FIRST VISIBLE step; consumes renderPositions + visualRadius)**.
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
@@ -26,12 +26,13 @@ Living build state. Claude Code: read this FIRST every session, update it LAST e
 - 1.9 Bench — validation.ts measureBenchmark(500 bodies, seeded mulberry32, 150ms time-budget, yoshida4): dev machine ~225–240 steps/sec ≈ 0.02–0.023 sim-yr/sec (brute-force O(n²), single-thread JS; few-body scenes are orders of magnitude faster). Recorded in VALIDATION.md Performance section. Test asserts a GENEROUS regression floor (>30 steps/sec) to avoid hardware flakiness. IMPORTANT (churn fix): VALIDATION.md is now written ONLY when env UPDATE_VALIDATION is set — routine `pnpm test` asserts but never rewrites the file (verified md5 unchanged). Regenerate via `UPDATE_VALIDATION=1 pnpm exec vitest run tests/validation.test.ts`.
 - 2.1 Render scaffold — installed three 0.185 + @react-three/fiber 9.6 + drei 10.7 + postprocessing 3.0 (all §3-allowed). src/render/CanvasRoot.tsx: full-bleed fixed <Canvas> (dpr [1,2], antialias), scene background #05070B (darker than chrome #0B0E14), drei OrbitControls (makeDefault, damped: dampingFactor 0.08 — weighty). App.tsx now renders just the canvas; index.css reset to full-viewport dark; removed Vite template cruft (App.css, template imgs, icons.svg); index.html title → Simuverse. Deployed to https://simuverse-snowy.vercel.app (HTTP 200). Rendering step = NO vitest; MANUAL check pending (60fps/console warnings — owner eyeball).
 - 2.2 Frame bridge — installed zustand 5 (was never installed; §3-allowed). src/state/frameStore.ts: useFrameStore (prev/next frames + arrivals + order, pushFrame shifts next→prev) + PURE lerpPositions/interpolationAlpha (render one physics-interval behind, alpha=(now−nextArrival)/span clamped; snap on null-prev or body-count change) + renderPositions singleton (imperative output, kept out of zustand so 60/s frames cause no React re-renders). src/render/FrameBridge.tsx (useFrame → interpolate into renderPositions). src/render/useEngineDemo.ts = TEMPORARY Phase-2 dev scene (star + 3 circular planets, real EngineClient worker, timescale 0.5) so there's live motion to build against — replaced by presets/commands later. Wired into CanvasRoot. Vite emits the worker chunk (engine.worker-*.js) — worker pipeline builds+deploys. 9 frame-store tests. NO VISIBLE output yet (meshes consume renderPositions at 2.4); smoothness manually verifiable then.
+- 2.3 Scale + floating origin — src/render/scale.ts: RENDER_SCALE=10 units/AU, REBASE_THRESHOLD=5000; PURE visualRadius(type,massMsun) (star 1.4·(M/M☉)^0.25, planet 0.5·(M/M⊕)^0.15 [note M⊕ base → /3.003e-6], moon 0.3, blackhole 1.0·(M/10M☉)^0.25 — display-only, "illustrative"), worldToRender(worldAU,originAU), needsRebase, rebase (returns new originAU + target-cancelling shift). floatingOrigin singleton {au:[3]} mutated on rebase. src/render/FloatingOrigin.tsx: useFrame rebases camera+controls target when target drifts >5000 units (dormant until distant objects exist — demo planets are at ≤2.4 AU). Installed @types/three (dev; needed for direct `import * as THREE`). 10 scale tests incl. "point stays put across a rebase". Wired into CanvasRoot.
 
 ## Deployed URL
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 17 files, 170 tests (+ frame-store). `pnpm lint` and `pnpm build` also green (build warns on bundle >500kB — three.js, expected). VALIDATION.md: 6 vectors PASS + bench recorded (written only under UPDATE_VALIDATION=1, so no routine churn). Rendering (2.x) visuals are manual deploy checks; pure logic (interpolation) is unit-tested.
+`pnpm test` green — 18 files, 179 tests (+ scale). `pnpm lint` and `pnpm build` also green (build warns on bundle >500kB — three.js, expected). VALIDATION.md: 6 vectors PASS + bench recorded (written only under UPDATE_VALIDATION=1, so no routine churn). Rendering (2.x) visuals are manual deploy checks; pure logic (interpolation, scale/radii) is unit-tested.
 
 ## Known issues / deviations from PLAN
 - BUNDLE SIZE: main JS ~1.08MB raw (~300kB gzip) now that three.js/drei are in. Vite warns >500kB. Fine for now; consider lazy-loading the canvas / code-splitting in Phase 6 QA (6.3).
@@ -52,8 +53,8 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 (none)
 
 ## Next actions
-1. **Step 2.3 — scale + floating origin:** src/render/scale.ts — RENDER_SCALE = 10 render units/AU; floating origin (rebase camera + objects when target > 5000 units from origin, subtract offset); visual body radii (display-only, Methods labels "display scaling — illustrative"): star 1.4·(M/M☉)^0.25, planet 0.5·(M/M⊕)^0.15, moon 0.3, blackhole 1.0·(M/10M☉)^0.25 render units. Accept (manual): object at 100 AU shows no jitter when camera orbits.
-2. Phase 2 continues 2.4 body meshes+blackbody → 2.5 starfield → 2.6 trails → 2.7 postprocessing/render modes → 2.8 camera focus. Owner cares a LOT about visual quality — high bar: real starfield depth, tuned (not blown-out) bloom, weighty damped camera, physics-driven trails, real blackbody colors. **2.4 is where the frame bridge (2.2) becomes VISIBLE — verify interpolation smoothness there.**
+1. **Step 2.4 — body meshes + selection (FIRST VISIBLE):** src/render/BodyMesh.tsx (sphere per body, sized via visualRadius, positioned from renderPositions[slot] each useFrame). Materials by type — star: emissive, color from src/render/blackbody.ts (standard piecewise blackbody RGB, ~1000–40000 K, badge `approximate`, cite in comment); planet/moon: standard material + albedo; blackhole: pure black sphere. Raycast onPointerDown → selection store. Hover: pointer cursor. Accept: 5772 K star = warm white; edit to 3000 K → red-orange; clicking selects. THIS is where the demo scene's planets finally render + move (verify 2.2 interpolation smoothness + 2.3 no-jitter).
+2. Phase 2 continues 2.5 starfield → 2.6 trails → 2.7 postprocessing/render modes → 2.8 camera focus. High visual bar (owner priority).
 3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
 
 ## Session log (newest first — one line per session)
