@@ -2,6 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { FrameBridge } from './FrameBridge'
 import { FloatingOrigin } from './FloatingOrigin'
+import { OrientationGizmo } from './OrientationGizmo'
 import { Bodies } from './Bodies'
 import { useEngineDemo } from './useEngineDemo'
 import { DEMO_RENDER_BODIES, isDemoMode } from './demoScene'
@@ -37,6 +38,7 @@ export function CanvasRoot() {
       {isDemoMode() && <Bodies bodies={DEMO_RENDER_BODIES} />}
       <FrameBridge />
       <FloatingOrigin />
+      <OrientationGizmo />
     </Canvas>
   )
 }

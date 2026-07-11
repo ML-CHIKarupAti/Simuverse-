@@ -15,9 +15,18 @@ export interface RenderBody {
   albedo?: string // planets/moons (hex)
 }
 
-// Circular orbit about a 1 M☉ star: v = √(GM/r), and √G = 2π ⇒ v = √(G/r).
-function circular(id: string, massMsun: number, r: number): EngineBody {
-  return { id, mass: massMsun, pos: [r, 0, 0], vel: [0, Math.sqrt(G / r), 0] }
+// Elliptical orbit about a 1 M☉ star, started at perihelion (real orbits are
+// ellipses — Kepler). Vis-viva at perihelion: v = √( G(M+m)(1+e) / (a(1-e)) ),
+// and √G = 2π. Varied eccentricities give each planet a distinct ellipse.
+function elliptical(
+  id: string,
+  massMsun: number,
+  a: number,
+  e: number,
+): EngineBody {
+  const rPeri = a * (1 - e)
+  const vPeri = Math.sqrt((G * (1 + massMsun) * (1 + e)) / (a * (1 - e)))
+  return { id, mass: massMsun, pos: [rPeri, 0, 0], vel: [0, vPeri, 0] }
 }
 
 interface DemoBody {
@@ -32,15 +41,15 @@ const DEMO_SCENE: DemoBody[] = [
   },
   {
     render: { id: 'rocky', type: 'planet', massMsun: 3e-6, albedo: '#b8a488' },
-    engine: circular('rocky', 3e-6, 1),
+    engine: elliptical('rocky', 3e-6, 1, 0.2), // Mercury-like eccentricity
   },
   {
     render: { id: 'ocean', type: 'planet', massMsun: 6e-6, albedo: '#5a86c0' },
-    engine: circular('ocean', 6e-6, 1.6),
+    engine: elliptical('ocean', 6e-6, 1.6, 0.03), // near-circular, Earth-like
   },
   {
     render: { id: 'rust', type: 'planet', massMsun: 3e-6, albedo: '#c1663f' },
-    engine: circular('rust', 3e-6, 2.4),
+    engine: elliptical('rust', 3e-6, 2.4, 0.12), // Mars-like eccentricity
   },
 ]
 
