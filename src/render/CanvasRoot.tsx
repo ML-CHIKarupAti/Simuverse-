@@ -5,6 +5,7 @@ import { FloatingOrigin } from './FloatingOrigin'
 import { OrientationGizmo } from './OrientationGizmo'
 import { OrientationReadout } from './OrientationReadout'
 import { Bodies } from './Bodies'
+import { Starfield } from './Starfield'
 import { useEngineDemo } from './useEngineDemo'
 import { DEMO_RENDER_BODIES, isDemoMode } from './demoScene'
 import { useSelectionStore } from '../state/selectionStore'
@@ -25,6 +26,7 @@ export function CanvasRoot() {
         onPointerMissed={() => useSelectionStore.getState().clear()}
       >
         <color attach="background" args={['#05070B']} />
+        <Starfield />
         {/* Dim ambient so the un-lit side of a planet isn't pure black. */}
         <ambientLight intensity={0.18} />
         {/* Weighty, damped controls — an instrument, not a game camera. */}
