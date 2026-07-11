@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { useFrameStore, renderPositions } from '../state/frameStore'
 import { RENDER_SCALE, floatingOrigin } from './scale'
 import { appendTrailPoint, fillTrailFade } from './trailBuffer'
+import { useRenderModeStore } from '../state/renderModeStore'
 import type { RenderBody } from './demoScene'
 
 // A glowing trail behind a body (PLAN §8 2.6). Badge: illustrative. Samples the
@@ -11,26 +12,35 @@ import type { RenderBody } from './demoScene'
 // ring buffer and draws it as an additive line that fades from head to tail.
 // A long-enough capacity draws the full closed ellipse of an orbit.
 //
+// Step 2.7: capacity + opacity + sampleEveryNFrames now driven by the render-
+// mode preset (restrained 128 / cinematic 256 / maximal 512). When the mode
+// changes, the trail is rebuilt with the new capacity — this clears accumulated
+// trail history, which is acceptable since mode switches are infrequent and the
+// trail refills within seconds.
+//
 // NOTE: points are stored in render units relative to the CURRENT floating
 // origin, so a rebase (only past 5000 units — never in the Phase-2 demo) would
 // misplace the existing trail. Fine for now; when the origin actually engages,
 // shift the buffers by the rebase delta.
-const CAP = 256
-const SAMPLE_EVERY = 4
 
 export function Trail({ body }: { body: RenderBody }) {
   const frame = useRef(0)
   const count = useRef(0)
   const last = useRef<[number, number, number] | null>(null)
+  const trailPreset = useRenderModeStore((s) => s.preset.trails)
   const color = useMemo(
     () => new THREE.Color(body.albedo ?? '#9aa4b2'),
     [body.albedo],
   )
 
+  const cap = trailPreset.capacity
+  const maxIntensity = trailPreset.opacity
+  const sampleEvery = trailPreset.sampleEveryNFrames
+
   const line = useMemo(() => {
     const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(CAP * 3), 3))
-    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(CAP * 3), 3))
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(cap * 3), 3))
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(cap * 3), 3))
     geo.setDrawRange(0, 0)
     const mat = new THREE.LineBasicMaterial({
       vertexColors: true,
@@ -39,7 +49,16 @@ export function Trail({ body }: { body: RenderBody }) {
       depthWrite: false,
     })
     return new THREE.Line(geo, mat)
-  }, [])
+  }, [cap])
+
+  // Reset accumulated trail state when capacity changes (mode switch).
+  // Placed in useEffect (not useMemo) to satisfy react-hooks/refs — refs
+  // must not be read/written during render.
+  useEffect(() => {
+    count.current = 0
+    last.current = null
+    frame.current = 0
+  }, [cap])
 
   useEffect(
     () => () => {
@@ -51,7 +70,7 @@ export function Trail({ body }: { body: RenderBody }) {
 
   useFrame(() => {
     frame.current++
-    if (frame.current % SAMPLE_EVERY !== 0) return
+    if (frame.current % sampleEvery !== 0) return
 
     const order = useFrameStore.getState().order
     const slot = order.indexOf(body.id)
@@ -73,8 +92,8 @@ export function Trail({ body }: { body: RenderBody }) {
 
     const posAttr = line.geometry.getAttribute('position') as THREE.BufferAttribute
     const colAttr = line.geometry.getAttribute('color') as THREE.BufferAttribute
-    count.current = appendTrailPoint(posAttr.array as Float32Array, count.current, CAP, x, y, z)
-    fillTrailFade(colAttr.array as Float32Array, count.current, color.r, color.g, color.b)
+    count.current = appendTrailPoint(posAttr.array as Float32Array, count.current, cap, x, y, z)
+    fillTrailFade(colAttr.array as Float32Array, count.current, color.r, color.g, color.b, maxIntensity)
     line.geometry.setDrawRange(0, count.current)
     posAttr.needsUpdate = true
     colAttr.needsUpdate = true

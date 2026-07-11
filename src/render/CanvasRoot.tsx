@@ -6,6 +6,7 @@ import { OrientationGizmo } from './OrientationGizmo'
 import { OrientationReadout } from './OrientationReadout'
 import { Bodies } from './Bodies'
 import { Starfield } from './Starfield'
+import { Postprocessing } from './Postprocessing'
 import { useEngineDemo } from './useEngineDemo'
 import { DEMO_RENDER_BODIES, isDemoMode } from './demoScene'
 import { useSelectionStore } from '../state/selectionStore'
@@ -14,7 +15,8 @@ import { useTrailsVisible } from '../state/trailsVisibleStore'
 
 // Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI. Clear
 // color #05070B is deliberately DARKER than the chrome (#0B0E14) so the
-// starfield (2.5) reads as the deepest layer. Starfield/trails/bloom land next.
+// starfield (2.5) reads as the deepest layer. Step 2.7: bloom postprocessing
+// via EffectComposer makes stars glow; parameters driven by render-mode preset.
 export function CanvasRoot() {
   useEngineDemo() // temporary Phase-2 dev scene (see useEngineDemo)
   return (
@@ -46,6 +48,8 @@ export function CanvasRoot() {
         <FloatingOrigin />
         <OrientationGizmo />
         <OrientationReadout />
+        {/* Step 2.7: EffectComposer + Bloom — params from render-mode preset. */}
+        <Postprocessing />
       </Canvas>
       <OrientationOverlay />
       {isDemoMode() && <TrailsToggle />}

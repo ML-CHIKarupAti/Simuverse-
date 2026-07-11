@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { generateStarfield } from './starfieldGeometry'
+import { useRenderModeStore } from '../state/renderModeStore'
 
 // Dense, non-repeating sky (PLAN §8 2.5). Badge: illustrative. A far sphere of
 // points that follows the camera every frame (copy position, not parent — see
@@ -15,16 +16,21 @@ import { generateStarfield } from './starfieldGeometry'
 // is camera-locked that depth is constant, so stars keep a steady size
 // regardless of zoom, like a real sky. The fragment shader gives each point a
 // soft circular falloff instead of a hard square.
+//
+// Step 2.7: starCount + brightnessMultiplier now driven by the render-mode
+// preset (restrained 6000 / cinematic 10000 / maximal 15000). The geometry is
+// regenerated when the mode changes — this is cheap at these counts and the
+// mode switch is instant.
 const RADIUS = 4000 // render units — far outside any Phase-2 scene, inside camera far=50000
 const TEMP_SEED = 1337 // TODO: replace with the scene's real meta.seed
-const STAR_COUNT = 8000 // TEMP fixed count; 2.7 wires the real render-mode presets
 
 const vertexShader = /* glsl */ `
   attribute float size;
   attribute vec3 color;
   varying vec3 vColor;
+  uniform float uBrightness;
   void main() {
-    vColor = color;
+    vColor = color * uBrightness;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = size * (300.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
@@ -44,9 +50,10 @@ const fragmentShader = /* glsl */ `
 export function Starfield() {
   const pointsRef = useRef<THREE.Points>(null)
   const camera = useThree((s) => s.camera)
+  const starfield = useRenderModeStore((s) => s.preset.starfield)
 
   const geometry = useMemo(() => {
-    const { positions, sizes, colors } = generateStarfield(STAR_COUNT, TEMP_SEED)
+    const { positions, sizes, colors } = generateStarfield(starfield.count, TEMP_SEED)
     const scaled = new Float32Array(positions.length)
     for (let i = 0; i < positions.length; i++) scaled[i] = positions[i] * RADIUS
 
@@ -55,25 +62,35 @@ export function Starfield() {
     geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     return geo
-  }, [])
+  }, [starfield.count])
 
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
-        uniforms: {},
+        uniforms: {
+          uBrightness: { value: starfield.brightnessMultiplier },
+        },
         vertexShader,
         fragmentShader,
         transparent: true,
         depthWrite: false,
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
   useFrame(() => {
     pointsRef.current?.position.copy(camera.position)
+    // Update brightness uniform reactively without rebuilding the material.
+    // Access via the points ref's material to avoid mutating a useMemo value.
+    const mat = pointsRef.current?.material as THREE.ShaderMaterial | undefined
+    if (mat?.uniforms?.uBrightness) {
+      mat.uniforms.uBrightness.value = starfield.brightnessMultiplier
+    }
   })
 
   return (
     <points ref={pointsRef} geometry={geometry} material={material} frustumCulled={false} />
   )
 }
+
