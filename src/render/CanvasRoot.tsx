@@ -2,12 +2,14 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { FrameBridge } from './FrameBridge'
 import { FloatingOrigin } from './FloatingOrigin'
+import { Bodies } from './Bodies'
 import { useEngineDemo } from './useEngineDemo'
+import { DEMO_RENDER_BODIES } from './demoScene'
+import { useSelectionStore } from '../state/selectionStore'
 
-// Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI.
-// Empty scene for now; bodies (2.4), starfield (2.5) and trails (2.6) fill it
-// in later. The clear color #05070B is deliberately DARKER than the chrome
-// (#0B0E14) so the starfield reads as the deepest layer, not the panels.
+// Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI. Clear
+// color #05070B is deliberately DARKER than the chrome (#0B0E14) so the
+// starfield (2.5) reads as the deepest layer. Starfield/trails/bloom land next.
 export function CanvasRoot() {
   useEngineDemo() // temporary Phase-2 dev scene (see useEngineDemo)
   return (
@@ -16,8 +18,11 @@ export function CanvasRoot() {
       dpr={[1, 2]}
       gl={{ antialias: true }}
       camera={{ position: [0, 6, 16], fov: 50, near: 0.1, far: 50000 }}
+      onPointerMissed={() => useSelectionStore.getState().clear()}
     >
       <color attach="background" args={['#05070B']} />
+      {/* Dim ambient so the un-lit side of a planet isn't pure black. */}
+      <ambientLight intensity={0.18} />
       {/* Weighty, damped controls — an instrument, not a game camera. */}
       <OrbitControls
         makeDefault
@@ -27,6 +32,7 @@ export function CanvasRoot() {
         zoomSpeed={0.8}
         panSpeed={0.6}
       />
+      <Bodies bodies={DEMO_RENDER_BODIES} />
       <FrameBridge />
       <FloatingOrigin />
     </Canvas>
