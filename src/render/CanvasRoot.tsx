@@ -10,6 +10,7 @@ import { useEngineDemo } from './useEngineDemo'
 import { DEMO_RENDER_BODIES, isDemoMode } from './demoScene'
 import { useSelectionStore } from '../state/selectionStore'
 import { useOrientationStore } from '../state/orientationStore'
+import { useTrailsVisible } from '../state/trailsVisibleStore'
 
 // Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI. Clear
 // color #05070B is deliberately DARKER than the chrome (#0B0E14) so the
@@ -47,7 +48,36 @@ export function CanvasRoot() {
         <OrientationReadout />
       </Canvas>
       <OrientationOverlay />
+      {isDemoMode() && <TrailsToggle />}
     </>
+  )
+}
+
+// TEMPORARY dev-only toggle (see trailsVisibleStore) so trails can be A/B'd
+// live while tuning. Replaced by the real \trails command in Phase 3.
+function TrailsToggle() {
+  const visible = useTrailsVisible((s) => s.visible)
+  const toggle = useTrailsVisible((s) => s.toggle)
+  return (
+    <button
+      onClick={toggle}
+      style={{
+        position: 'fixed',
+        left: 16,
+        bottom: 16,
+        fontFamily: 'ui-monospace, monospace',
+        fontSize: 11,
+        letterSpacing: '0.06em',
+        color: '#8b95a7',
+        background: 'rgba(14,17,24,0.75)',
+        border: '1px solid #232a36',
+        borderRadius: 6,
+        padding: '6px 10px',
+        cursor: 'pointer',
+      }}
+    >
+      trails: {visible ? 'on' : 'off'} (dev)
+    </button>
   )
 }
 

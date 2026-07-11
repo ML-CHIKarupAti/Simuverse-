@@ -40,16 +40,20 @@ const DEMO_SCENE: DemoBody[] = [
     engine: { id: 'sun', mass: 1, pos: [0, 0, 0], vel: [0, 0, 0] },
   },
   {
-    render: { id: 'rocky', type: 'planet', massMsun: 3e-6, albedo: '#b8a488' },
-    engine: elliptical('rocky', 3e-6, 1, 0.2), // Mercury-like eccentricity
+    // Deliberately near-circular — this is what Earth's REAL orbit (e=0.0167)
+    // actually looks like. Physically honest, not a rendering shortfall.
+    render: { id: 'ocean', type: 'planet', massMsun: 6e-6, albedo: '#5a86c0' },
+    engine: elliptical('ocean', 6e-6, 1, 0.03),
   },
   {
-    render: { id: 'ocean', type: 'planet', massMsun: 6e-6, albedo: '#5a86c0' },
-    engine: elliptical('ocean', 6e-6, 1.6, 0.03), // near-circular, Earth-like
+    // Exaggerated on purpose (real Mercury is 0.2056) so the DEMO makes the
+    // ellipse (star offset at a focus, not centered) unmistakable at a glance.
+    render: { id: 'rocky', type: 'planet', massMsun: 3e-6, albedo: '#b8a488' },
+    engine: elliptical('rocky', 3e-6, 1.6, 0.55),
   },
   {
     render: { id: 'rust', type: 'planet', massMsun: 3e-6, albedo: '#c1663f' },
-    engine: elliptical('rust', 3e-6, 2.4, 0.12), // Mars-like eccentricity
+    engine: elliptical('rust', 3e-6, 2.4, 0.4),
   },
 ]
 

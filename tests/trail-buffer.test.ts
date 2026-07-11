@@ -42,13 +42,32 @@ describe('appendTrailPoint', () => {
 })
 
 describe('fillTrailFade', () => {
-  it('fades from dim tail (oldest) to full head (newest)', () => {
+  it('is monotonically increasing from tail (oldest) to head (newest)', () => {
     const colors = new Float32Array(3 * 3)
     fillTrailFade(colors, 3, 1, 0.5, 0.25)
-    // index 0 (oldest) → f = 1/3; index 2 (newest) → f = 1 (full colour)
-    expect(colors[0]).toBeCloseTo(1 / 3, 6)
-    expect(colors[6]).toBeCloseTo(1, 6)
-    expect(colors[7]).toBeCloseTo(0.5, 6)
-    expect(colors[8]).toBeCloseTo(0.25, 6)
+    expect(colors[0]).toBeLessThan(colors[3])
+    expect(colors[3]).toBeLessThan(colors[6])
+  })
+
+  it('caps the brightest (newest) point at maxIntensity, not full colour', () => {
+    const colors = new Float32Array(3)
+    fillTrailFade(colors, 1, 1, 0, 0, 0.6)
+    expect(colors[0]).toBeCloseTo(0.6, 6) // newest point → f=1 → capped at maxIntensity
+  })
+
+  it('a steep falloff keeps most of the ring faint (comet-tail, not a solid ring)', () => {
+    const count = 256
+    const colors = new Float32Array(count * 3)
+    fillTrailFade(colors, count, 1, 1, 1)
+    // 80% of the way back from the head should still be well below the peak.
+    const at80pct = colors[3 * Math.floor(count * 0.2)]
+    const peak = colors[3 * (count - 1)]
+    expect(at80pct).toBeLessThan(peak * 0.2)
+  })
+
+  it('respects a custom maxIntensity and falloffPower', () => {
+    const colors = new Float32Array(3)
+    fillTrailFade(colors, 1, 1, 0, 0, 1, 1) // linear, full intensity — old behaviour
+    expect(colors[0]).toBeCloseTo(1, 6)
   })
 })

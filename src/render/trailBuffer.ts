@@ -28,17 +28,22 @@ export function appendTrailPoint(
 }
 
 // Fill per-vertex colours with a head-to-tail fade: oldest point (index 0) is
-// dim, newest (index count-1) is full colour. With additive blending the dim
-// tail adds ~nothing (fades to invisible) and the head glows.
+// dim, newest (index count-1) is bright. A STEEP power curve (not linear) so
+// most of the ring stays faint and only a short arc near the current position
+// glows — a comet-tail look rather than a solid outlined circle. `maxIntensity`
+// caps the brightest point below the albedo's full value so even the head
+// stays subtle, not a harsh line.
 export function fillTrailFade(
   colors: Float32Array,
   count: number,
   r: number,
   g: number,
   b: number,
+  maxIntensity = 0.6,
+  falloffPower = 4,
 ): void {
   for (let i = 0; i < count; i++) {
-    const f = (i + 1) / count
+    const f = Math.pow((i + 1) / count, falloffPower) * maxIntensity
     colors[3 * i] = r * f
     colors[3 * i + 1] = g * f
     colors[3 * i + 2] = b * f
