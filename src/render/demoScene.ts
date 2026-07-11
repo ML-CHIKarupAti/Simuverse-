@@ -46,3 +46,14 @@ const DEMO_SCENE: DemoBody[] = [
 
 export const DEMO_ENGINE_BODIES: EngineBody[] = DEMO_SCENE.map((b) => b.engine)
 export const DEMO_RENDER_BODIES: RenderBody[] = DEMO_SCENE.map((b) => b.render)
+
+// The product UX is blank-until-commanded (PLAN §8.5 empty state; the terminal
+// that inserts bodies is Phase 3). This dev scene exists ONLY to build/verify
+// the Phase-2 visuals against real motion, so it is opt-in via `?demo` and the
+// default deploy stays empty as designed.
+export function isDemoMode(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('demo')
+  )
+}

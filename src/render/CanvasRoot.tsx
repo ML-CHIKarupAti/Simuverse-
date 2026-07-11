@@ -4,7 +4,7 @@ import { FrameBridge } from './FrameBridge'
 import { FloatingOrigin } from './FloatingOrigin'
 import { Bodies } from './Bodies'
 import { useEngineDemo } from './useEngineDemo'
-import { DEMO_RENDER_BODIES } from './demoScene'
+import { DEMO_RENDER_BODIES, isDemoMode } from './demoScene'
 import { useSelectionStore } from '../state/selectionStore'
 
 // Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI. Clear
@@ -32,7 +32,9 @@ export function CanvasRoot() {
         zoomSpeed={0.8}
         panSpeed={0.6}
       />
-      <Bodies bodies={DEMO_RENDER_BODIES} />
+      {/* Blank by design until a command inserts a body (Phase 3). The dev
+          scene is opt-in via ?demo, purely to build the Phase-2 visuals. */}
+      {isDemoMode() && <Bodies bodies={DEMO_RENDER_BODIES} />}
       <FrameBridge />
       <FloatingOrigin />
     </Canvas>

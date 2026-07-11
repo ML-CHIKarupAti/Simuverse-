@@ -56,7 +56,7 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 ## Next actions
 1. **Step 2.5 — starfield:** src/render/Starfield.tsx — drei Points, count from render-mode preset (restrained 6k / cinematic 10k / maximal 15k — but render modes are 2.7, so start with a fixed count), distributed on a FAR sphere attached to the camera (never rebases), per-star size/brightness/subtle color variation seeded from meta.seed (determinism). Badge `illustrative`. Accept: dense non-repeating sky, frame rate unchanged.
 2. Phase 2 continues 2.6 trails → 2.7 postprocessing/render modes → 2.8 camera focus. High visual bar (owner priority).
-3. **OWNER — first real visual review:** https://simuverse-snowy.vercel.app should now show a bright warm-white star with 3 colored planets orbiting. Check: planets move smoothly (2.2 interp), no jitter, clicking a body shows a faint gold selection shell, hover shows a pointer cursor, zero console errors. Lighting/sizes are first-pass — tell me what to tune.
+3. **OWNER — first real visual review:** default https://simuverse-snowy.vercel.app is BLANK by design (bodies only appear via command — terminal is Phase 3). To preview the Phase-2 dev scene (star + 3 orbiting planets), use **https://simuverse-snowy.vercel.app/?demo** — check: smooth orbits (2.2), no jitter, click→gold selection shell, hover→pointer cursor, zero console errors. Lighting/sizes/colors are first-pass — tell me what to tune. (Demo is gated via ?demo per owner's blank-until-command design; removed entirely once the terminal/presets land.)
 4. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
 
 ## Session log (newest first — one line per session)
