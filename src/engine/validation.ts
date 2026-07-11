@@ -6,6 +6,7 @@
 
 import * as bodyStore from './state'
 import type { BodyArrays } from './state'
+import type { EngineBody } from './protocol'
 import { computeForces } from './forces'
 import { yoshida4Step, integratorStep } from './integrators'
 import { conserved, relativeDrift } from './diagnostics'
@@ -112,6 +113,58 @@ export function determinismHashes(): { a: string; b: string } {
   return { a: run(), b: run() }
 }
 
+// ---- (1.9) benchmark ------------------------------------------------------
+
+// Seeded PRNG (mulberry32) so the benchmark SCENE is reproducible; the timing
+// itself is naturally hardware-dependent (determinism §2 applies to the scene).
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+export interface BenchmarkResult {
+  bodies: number
+  stepsPerSec: number
+  realYrPerSec: number // stepsPerSec × dt — max sustained timescale before the cap
+}
+
+// Measure raw integrator throughput for a dense random N-body cloud (PLAN §1.9).
+// Uses a fixed time budget so the measurement is stable and bounded regardless
+// of machine speed.
+export function measureBenchmark(
+  nBodies = 500,
+  seed = 0xc0ffee,
+): BenchmarkResult {
+  const rng = mulberry32(seed)
+  const bodies: EngineBody[] = []
+  for (let i = 0; i < nBodies; i++) {
+    bodies.push({
+      id: `b${i}`,
+      mass: 1e-3 + rng() * 1e-2,
+      pos: [(rng() - 0.5) * 20, (rng() - 0.5) * 20, (rng() - 0.5) * 20],
+      vel: [(rng() - 0.5) * 0.2, (rng() - 0.5) * 0.2, (rng() - 0.5) * 0.2],
+    })
+  }
+  const s = bodyStore.fromBodies(bodies)
+  computeForces(s, EPS)
+  for (let i = 0; i < 30; i++) yoshida4Step(s, DT, EPS) // warm up the JIT
+
+  const budgetMs = 150
+  let steps = 0
+  const t0 = performance.now()
+  while (performance.now() - t0 < budgetMs) {
+    yoshida4Step(s, DT, EPS)
+    steps++
+  }
+  const stepsPerSec = steps / ((performance.now() - t0) / 1000)
+  return { bodies: nBodies, stepsPerSec, realYrPerSec: stepsPerSec * DT }
+}
+
 // ---- assembled results ----------------------------------------------------
 
 export interface ValidationResult {
@@ -168,7 +221,10 @@ export function runValidations(): ValidationResult[] {
   ]
 }
 
-export function toValidationMarkdown(rows: ValidationResult[]): string {
+export function toValidationMarkdown(
+  rows: ValidationResult[],
+  bench?: BenchmarkResult,
+): string {
   const lines = [
     '# Simuverse — Validation',
     '',
@@ -182,7 +238,17 @@ export function toValidationMarkdown(rows: ValidationResult[]): string {
       (r) =>
         `| ${r.test} | ${r.target} | ${r.measured} | ${r.pass ? '**PASS**' : '**FAIL**'} |`,
     ),
-    '',
   ]
+  if (bench) {
+    lines.push(
+      '',
+      '## Performance',
+      '',
+      `${bench.bodies}-body N-body step (Yoshida4, dt = 1e-4 yr), measured on the development machine — indicative, hardware-dependent:`,
+      '',
+      `- **${Math.round(bench.stepsPerSec)} steps/sec** (≈ **${bench.realYrPerSec.toFixed(2)} simulated yr/sec** real-time before the substep cap)`,
+    )
+  }
+  lines.push('')
   return lines.join('\n')
 }

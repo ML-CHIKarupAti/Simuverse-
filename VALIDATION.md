@@ -12,3 +12,9 @@ Canonical units: **AU, M☉, yr**. G = 4π². Plummer softening ε = 1e-6 AU. Fi
 | Angular-momentum drift — Yoshida4 (100 orbits) | |ΔL/L₀| < 1e-9 | 1.62e-13 | **PASS** |
 | Angular-momentum drift — Verlet (100 orbits) | |ΔL/L₀| < 1e-9 | 1.43e-13 | **PASS** |
 | Determinism (two runs, same config) | identical Float64 state | 6b134b4c == 6b134b4c | **PASS** |
+
+## Performance
+
+500-body N-body step (Yoshida4, dt = 1e-4 yr), measured on the development machine — indicative, hardware-dependent:
+
+- **240 steps/sec** (≈ **0.02 simulated yr/sec** real-time before the substep cap)
