@@ -121,3 +121,17 @@ export function frameArrays(s: BodyArrays): {
 } {
   return { positions: new Float64Array(s.pos), velocities: new Float64Array(s.vel) }
 }
+
+// A deep copy of the store. The sim loop clones once per tick, then the
+// integrator mutates the clone in place across substeps (no per-step
+// allocation), keeping the reducer externally immutable.
+export function cloneStore(s: BodyArrays): BodyArrays {
+  return {
+    n: s.n,
+    ids: [...s.ids],
+    mass: new Float64Array(s.mass),
+    pos: new Float64Array(s.pos),
+    vel: new Float64Array(s.vel),
+    acc: new Float64Array(s.acc),
+  }
+}

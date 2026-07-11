@@ -34,6 +34,12 @@ function onlyFrame(out: EngineOutMessage[]) {
   return msg
 }
 
+function findFrame(out: EngineOutMessage[]) {
+  const msg = out.find((m) => m.type === 'frame')
+  if (!msg || msg.type !== 'frame') throw new Error('no frame in output')
+  return msg
+}
+
 describe('engine core — init & snapshot', () => {
   it('init loads bodies, zeroes simTime, adopts config timescale', () => {
     const s = inited([body('sun', 0, 0), body('earth', 1, 6.283)])
@@ -70,7 +76,7 @@ describe('engine core — init & snapshot', () => {
   })
 })
 
-describe('engine core — transport (1.1 plumbing)', () => {
+describe('engine core — transport', () => {
   it('play/pause/setTimescale set flags without emitting', () => {
     let s = inited([body('sun', 0, 0)])
     let r = handleMessage(s, EngineMsg.play())
@@ -83,12 +89,15 @@ describe('engine core — transport (1.1 plumbing)', () => {
     expect(s.timescale).toBe(1000)
   })
 
-  it('stepOnce advances the clock by dt and emits a frame (bodies unchanged)', () => {
-    const s = inited([body('earth', 1, 6.283)])
+  it('stepOnce integrates one dt and emits a frame + diagnostics', () => {
+    const s = inited([body('earth', 1, 6.283)]) // single body, no forces
     const r = handleMessage(s, EngineMsg.stepOnce())
     expect(r.state.simTime).toBeCloseTo(CONFIG.dt, 12)
-    const frame = onlyFrame(r.out)
-    expect(Array.from(frame.positions)).toEqual([1, 0, 0]) // no integrator yet
+    // free drift by v·dt: x unchanged, y advances by vy·dt
+    const frame = findFrame(r.out)
+    expect(frame.positions[0]).toBeCloseTo(1, 12)
+    expect(frame.positions[1]).toBeCloseTo(6.283 * CONFIG.dt, 12)
+    expect(r.out.some((m) => m.type === 'diagnostics')).toBe(true)
   })
 })
 

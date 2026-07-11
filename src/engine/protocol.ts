@@ -77,6 +77,12 @@ export interface DiagnosticsPayload {
   angularMomentum: number // |L|, canonical
   energyDriftRel: number // |ΔE / E₀|, dimensionless
   angularMomentumDriftRel: number // |ΔL / L₀|, dimensionless
+  // Honest reporting of the sim loop's throughput (PLAN §1.7): the actual
+  // sim-yr advanced per real-second. Equals the requested timescale unless the
+  // per-tick substep cap throttled it, in which case `capped` is true and the
+  // UI must show THIS rate, never the requested one.
+  effectiveTimescale: number
+  capped: boolean
 }
 
 export type EngineOutMessage =

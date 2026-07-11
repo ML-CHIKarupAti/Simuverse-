@@ -13,6 +13,7 @@
 
 import { computeForces } from './forces'
 import type { BodyArrays } from './state'
+import type { Integrator } from '../scene/schema'
 import { G as G_DEFAULT } from '../units/units'
 
 export function verletStep(
@@ -55,4 +56,23 @@ export function yoshida4Step(
   verletStep(store, YOSHIDA_W1 * dt, softening, gConst)
   verletStep(store, YOSHIDA_W0 * dt, softening, gConst)
   verletStep(store, YOSHIDA_W1 * dt, softening, gConst)
+}
+
+// Dispatch to the integrator named in config.integrator. Same precondition as
+// the individual steps: store.acc must be primed and is left primed on exit.
+export function integratorStep(
+  integrator: Integrator,
+  store: BodyArrays,
+  dt: number,
+  softening: number,
+  gConst: number = G_DEFAULT,
+): void {
+  switch (integrator) {
+    case 'verlet':
+      verletStep(store, dt, softening, gConst)
+      return
+    case 'yoshida4':
+      yoshida4Step(store, dt, softening, gConst)
+      return
+  }
 }
