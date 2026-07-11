@@ -94,6 +94,7 @@ export const MetaSchema = z.strictObject({
 
 export const LogEventKindSchema = z.enum([
   'objectInserted',
+  'objectRemoved',
   'paramChanged',
   'derivedComputed',
   'simStarted',

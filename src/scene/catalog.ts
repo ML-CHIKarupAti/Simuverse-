@@ -13,9 +13,9 @@ export interface CatalogEntry {
 }
 
 // 1 Earth mass in solar masses (PLAN §7). Masses are stored in Msun because the
-// unit enum has no Earth-mass unit; command input like `mass=1Me` is a concern
-// for the insert-semantics layer, not the catalog.
-const EARTH_MASS_MSUN = 3.003e-6
+// unit enum has no Earth-mass unit; command input like `mass=1Me` is resolved
+// by the insert-semantics layer (commands/insert.ts), which imports this.
+export const EARTH_MASS_MSUN = 3.003e-6
 
 export const CATALOG: Record<ObjectType, CatalogEntry> = {
   // 1 M☉, radius 1 R☉; gravity exact, surface visuals illustrative.

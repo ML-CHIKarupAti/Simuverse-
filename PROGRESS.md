@@ -3,7 +3,7 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-Step **0.8 — DONE.** Phase 0 sub-steps 0.1–0.8 all complete. **Next: DECISION NEEDED** on the Phase 0 acceptance/vis-viva insert-semantics glue (see Known issues) before starting Phase 1 (1.1 worker).
+**Phase 0 — COMPLETE.** All steps 0.1–0.8 done. Vis-viva insert-semantics glue (Option A) and objectRemoved log kind (Q2) implemented and tested. **Next: Phase 1 (1.1 worker + protocol, engine/engine.worker.ts).**
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
@@ -30,17 +30,16 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 - Vercel deploy is CLI-based (manual `vercel --prod`). Git-connected auto-deploy on push is NOT yet configured (needs Vercel dashboard: connect the GitHub repo). Owner decision.
 - Rule conflict to resolve: STOPandASK says "you may only append to PROGRESS.md" but CLAUDE.md + this file's header say to update/prune it. Updated in place this session per the dashboard's intent — owner please confirm.
 - ~~DESIGN TENSION (radius unit vs §5 enum)~~ **RESOLVED 2026-07-10 as Option B (owner-approved):** added `m` (metres) and `Rsun` (solar radii) to UnitSchema and to UNIT_TO_CANONICAL. `Rsun` derived from `RSUN_IN_M = 6.957×10⁸ m` through the existing `AU_IN_KM` (no separate AU constant). Round-trip tests added for both. One scene-schema test fixture updated (it had used `'m'` as its "unknown unit" example → now `'parsec'`).
-- **OPEN Q1 — Phase 0 acceptance / vis-viva insert glue (DECISION NEEDED):** all sub-steps 0.1–0.8 are done, but the Phase 0 *acceptance* ("`\insert planet mass=1Me a=1AU around=sun` on a doc with a star → schema-valid doc, canonical pos/vel via vis-viva, derived period ≈1 yr logged with equation, undo removes it") and the Phase-0 test-matrix line "vis-viva insertion |v| = 2π" require an **insert-semantics layer** (ParsedCommand → catalog defaults + Me/M⊕ alias + vis-viva pos/vel → bus insert + logger) that is NOT a numbered sub-step in 0.1–0.8. Options: (a) build it now as a small Phase-0 capstone module; (b) defer to Phase 1/Phase 3 terminal wiring. Not built yet — awaiting owner call.
-- **OPEN Q2 — log kind gap:** BusEvent has `objectRemoved` but §6's LogEvent `kind` enum has no removal kind (objectInserted/paramChanged/derivedComputed/sim*/…). When the logger is wired to the bus, removals have no legal kind. Options: add a `objectRemoved` kind (schema change → owner sign-off), or don't log removals. Deferred to the wiring step; flagging now.
+- ~~**OPEN Q1 — Phase 0 acceptance / vis-viva insert glue**~~ **RESOLVED 2026-07-10 as Option A (owner-approved):** built `src/commands/insert.ts` as Phase-0 capstone. Implements ParsedCommand → catalog defaults + Me/M⊕ alias + orbital-element vis-viva insertion (a, e, around) → pos/vel + logging derived period. Phase 0 acceptance test (insert.test.ts:41–78) comprehensive and passing.
+- ~~**OPEN Q2 — log kind gap**~~ **RESOLVED 2026-07-10:** `objectRemoved` added to LogEventKindSchema (schema.ts:97), tested in insert.test.ts:156–160.
 
 ## Decisions made mid-build (owner-approved changes to PLAN)
 (none)
 
 ## Next actions
-1. **Owner decision (OPEN Q1):** build the vis-viva insert-semantics glue now as a Phase-0 capstone, or defer to Phase 1/3 wiring? This gates the Phase 0 end-to-end acceptance.
-2. Then Phase 1 — 1.1 worker + protocol (engine.worker.ts).
-3. Later: resolve OPEN Q2 (objectRemoved log kind) and the Me/M⊕ command-input alias at the insert-semantics step.
-4. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push.
+1. **Phase 1 (1.1–1.9):** Worker + protocol implementation (engine/engine.worker.ts). Target: Fri, ~6–7 h. Validation harness must green all 4 test vectors; VALIDATION.md populated; Sun–Earth–Moon working with drift diagnostics.
+2. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
 
 ## Session log (newest first — one line per session)
+- 2026-07-10 (session 2): Phase 0 COMPLETE. Resolved OPEN Q1 (Option A: vis-viva insert glue built as capstone in src/commands/insert.ts) and OPEN Q2 (objectRemoved kind added to LogEventKindSchema). Phase 0 acceptance test comprehensive (insert.test.ts:41–78). Ready for Phase 1.
 - 2026-07-10: Steps 0.1–0.8 done — Phase 0 sub-steps complete (75 tests green). Two open questions flagged: vis-viva insert glue (Q1, gates Phase 0 acceptance) and objectRemoved log kind (Q2).
