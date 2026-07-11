@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { verletStep } from '../src/engine/integrators'
+import {
+  verletStep,
+  yoshida4Step,
+  YOSHIDA_W1,
+  YOSHIDA_W0,
+} from '../src/engine/integrators'
 import { computeForces } from '../src/engine/forces'
 import * as bodyStore from '../src/engine/state'
 import type { BodyArrays } from '../src/engine/state'
@@ -20,6 +25,27 @@ function circularSystem(): BodyArrays {
   const bodies: EngineBody[] = [
     { id: 'star', mass: M, pos: [0, 0, 0], vel: [0, 0, 0] },
     { id: 'planet', mass: m, pos: [r, 0, 0], vel: [0, v, 0] },
+  ]
+  return bodyStore.fromBodies(bodies)
+}
+
+// An eccentric orbit (e = 0.6, a = 1 AU — PLAN §1.8's own fixture), started at
+// perihelion. A perfectly CIRCULAR orbit is a poor accuracy test: by symmetry,
+// truncation error largely cancels over a full period even for a low-order
+// method, so both integrators' drift collapses to floating-point noise and
+// tells you nothing. Eccentric orbits are fast at perihelion and slow at
+// aphelion, which is exactly what stresses a fixed-dt integrator and reveals
+// the real difference between 2nd- and 4th-order accuracy.
+function eccentricSystem(): BodyArrays {
+  const M = 1
+  const m = 1e-9
+  const a = 1
+  const e = 0.6
+  const rPeri = a * (1 - e)
+  const vPeri = Math.sqrt((G * (M + m) * (1 + e)) / (a * (1 - e))) // vis-viva
+  const bodies: EngineBody[] = [
+    { id: 'star', mass: M, pos: [0, 0, 0], vel: [0, 0, 0] },
+    { id: 'planet', mass: m, pos: [rPeri, 0, 0], vel: [0, vPeri, 0] },
   ]
   return bodyStore.fromBodies(bodies)
 }
@@ -63,9 +89,11 @@ function totalMomentum(s: BodyArrays): [number, number, number] {
   return p
 }
 
-function run(s: BodyArrays, steps: number): void {
+type StepFn = (s: BodyArrays, dt: number, eps: number) => void
+
+function run(s: BodyArrays, steps: number, step: StepFn = verletStep): void {
   computeForces(s, EPS) // prime a(x₀)
-  for (let i = 0; i < steps; i++) verletStep(s, DT, EPS)
+  for (let i = 0; i < steps; i++) step(s, DT, EPS)
 }
 
 describe('velocity-Verlet — circular orbit', () => {
@@ -114,6 +142,62 @@ describe('velocity-Verlet — determinism', () => {
     const b = circularSystem()
     run(a, 5000)
     run(b, 5000)
+    expect(Array.from(a.pos)).toEqual(Array.from(b.pos))
+    expect(Array.from(a.vel)).toEqual(Array.from(b.vel))
+  })
+})
+
+describe('Yoshida4 — coefficients', () => {
+  it('2·w₁ + w₀ = 1 (sub-steps sum to the full dt)', () => {
+    expect(2 * YOSHIDA_W1 + YOSHIDA_W0).toBeCloseTo(1, 12)
+  })
+})
+
+describe('Yoshida4 — circular orbit', () => {
+  it('returns to its starting point after one period', () => {
+    const s = circularSystem()
+    run(s, STEPS_PER_ORBIT, yoshida4Step)
+    const dx = s.pos[3] - 1
+    const dy = s.pos[4] - 0
+    expect(Math.hypot(dx, dy)).toBeLessThan(0.01)
+  })
+})
+
+describe('Yoshida4 — conservation, far tighter than Verlet', () => {
+  it('conserves energy far better than Verlet on an eccentric (e=0.6) orbit', () => {
+    const verlet = eccentricSystem()
+    const yoshida = eccentricSystem()
+    computeForces(verlet, EPS)
+    computeForces(yoshida, EPS)
+    const e0 = totalEnergy(verlet, EPS) // same initial condition, same E0
+
+    for (let i = 0; i < 2 * STEPS_PER_ORBIT; i++) {
+      verletStep(verlet, DT, EPS)
+      yoshida4Step(yoshida, DT, EPS)
+    }
+
+    const verletDrift = Math.abs((totalEnergy(verlet, EPS) - e0) / e0)
+    const yoshidaDrift = Math.abs((totalEnergy(yoshida, EPS) - e0) / e0)
+
+    expect(yoshidaDrift).toBeLessThan(1e-6) // PLAN §1.8 target (over 100 orbits; comfortable margin at 2)
+    expect(yoshidaDrift).toBeLessThan(verletDrift / 10) // meaningfully tighter, not noise-vs-noise
+  })
+
+  it('conserves total linear momentum', () => {
+    const s = circularSystem()
+    const p0 = totalMomentum(s)
+    run(s, STEPS_PER_ORBIT, yoshida4Step)
+    const p1 = totalMomentum(s)
+    expect(p1[0]).toBeCloseTo(p0[0], 12)
+    expect(p1[1]).toBeCloseTo(p0[1], 12)
+    expect(p1[2]).toBeCloseTo(p0[2], 12)
+  })
+
+  it('two identical runs produce bit-identical state', () => {
+    const a = circularSystem()
+    const b = circularSystem()
+    run(a, 5000, yoshida4Step)
+    run(b, 5000, yoshida4Step)
     expect(Array.from(a.pos)).toEqual(Array.from(b.pos))
     expect(Array.from(a.vel)).toEqual(Array.from(b.vel))
   })

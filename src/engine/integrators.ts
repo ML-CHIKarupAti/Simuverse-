@@ -34,3 +34,25 @@ export function verletStep(
   // half kick with the updated acceleration
   for (let k = 0; k < len; k++) vel[k] += halfDt * acc[k]
 }
+
+// Yoshida 4th-order (PLAN §8 1.5) — a composition of THREE Verlet substeps with
+// scaled sub-timesteps (w₁, w₀, w₁), a standard technique for building a
+// higher-order symplectic integrator out of a lower-order one. The sub-steps
+// sum to the full dt (2w₁ + w₀ = 1 exactly) and each verletStep call leaves
+// store.acc primed for the next, so the three chain with no extra glue.
+//
+// w₁ = 1 / (2 − 2^{1/3}),  w₀ = −2^{1/3} / (2 − 2^{1/3})
+const CBRT2 = Math.cbrt(2)
+export const YOSHIDA_W1 = 1 / (2 - CBRT2)
+export const YOSHIDA_W0 = -CBRT2 / (2 - CBRT2)
+
+export function yoshida4Step(
+  store: BodyArrays,
+  dt: number,
+  softening: number,
+  gConst: number = G_DEFAULT,
+): void {
+  verletStep(store, YOSHIDA_W1 * dt, softening, gConst)
+  verletStep(store, YOSHIDA_W0 * dt, softening, gConst)
+  verletStep(store, YOSHIDA_W1 * dt, softening, gConst)
+}
