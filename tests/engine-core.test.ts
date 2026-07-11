@@ -37,7 +37,7 @@ function onlyFrame(out: EngineOutMessage[]) {
 describe('engine core — init & snapshot', () => {
   it('init loads bodies, zeroes simTime, adopts config timescale', () => {
     const s = inited([body('sun', 0, 0), body('earth', 1, 6.283)])
-    expect(s.bodies.map((b) => b.id)).toEqual(['sun', 'earth'])
+    expect(s.store.ids).toEqual(['sun', 'earth'])
     expect(s.simTime).toBe(0)
     expect(s.running).toBe(false)
     expect(s.timescale).toBe(CONFIG.timescale)
@@ -96,16 +96,16 @@ describe('engine core — body management', () => {
   it('addBody appends; duplicate id errors', () => {
     const s = inited([body('sun', 0, 0)])
     const added = handleMessage(s, EngineMsg.addBody(body('earth', 1, 6.283)))
-    expect(added.state.bodies.map((b) => b.id)).toEqual(['sun', 'earth'])
+    expect(added.state.store.ids).toEqual(['sun', 'earth'])
     const dup = handleMessage(added.state, EngineMsg.addBody(body('earth', 2, 0)))
     expect(dup.out[0].type).toBe('error')
-    expect(dup.state.bodies).toHaveLength(2)
+    expect(dup.state.store.n).toBe(2)
   })
 
   it('removeBody removes; missing id errors', () => {
     const s = inited([body('sun', 0, 0), body('earth', 1, 6.283)])
     const removed = handleMessage(s, EngineMsg.removeBody('earth'))
-    expect(removed.state.bodies.map((b) => b.id)).toEqual(['sun'])
+    expect(removed.state.store.ids).toEqual(['sun'])
     const missing = handleMessage(s, EngineMsg.removeBody('pluto'))
     expect(missing.out[0].type).toBe('error')
   })
@@ -113,8 +113,8 @@ describe('engine core — body management', () => {
   it('updateBody patches only provided fields; missing id errors', () => {
     const s = inited([body('earth', 1, 6.283)])
     const updated = handleMessage(s, EngineMsg.updateBody('earth', { mass: 5 }))
-    expect(updated.state.bodies[0].mass).toBe(5)
-    expect(updated.state.bodies[0].pos).toEqual([1, 0, 0]) // unchanged
+    expect(updated.state.store.mass[0]).toBe(5)
+    expect(Array.from(updated.state.store.pos.slice(0, 3))).toEqual([1, 0, 0]) // unchanged
     const missing = handleMessage(s, EngineMsg.updateBody('mars', { mass: 1 }))
     expect(missing.out[0].type).toBe('error')
   })

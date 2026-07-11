@@ -3,22 +3,22 @@
 // this, and this module is unit-tested directly in node. State transitions are
 // immutable; every handler returns the next state plus the messages to post.
 //
-// SCOPE (1.1): plumbing only. Bodies are stored and echoed as frames, but there
-// is NO force kernel or integrator yet — those land in 1.3/1.4. `stepOnce`
-// advances the clock and emits a frame so the frame/transfer path is exercised;
-// bodies start actually moving once the integrator arrives.
+// State is held as structure-of-arrays (PLAN §8 1.2, see state.ts). SCOPE so far
+// is plumbing only: bodies are stored and echoed as frames, but there is NO
+// force kernel or integrator yet — those land in 1.3/1.4. `stepOnce` advances
+// the clock and emits a frame; bodies start moving once the integrator arrives.
 
 import type {
   EngineInMessage,
   EngineOutMessage,
-  EngineBody,
   EngineConfig,
-  FramePayload,
 } from './protocol'
+import * as bodyStore from './state'
+import type { BodyArrays } from './state'
 
 export interface EngineState {
   config: EngineConfig
-  bodies: EngineBody[]
+  store: BodyArrays
   simTime: number // yr
   running: boolean
   timescale: number // simulated yr per real second
@@ -34,37 +34,15 @@ export interface HandleResult {
 export function createInitialState(): EngineState {
   return {
     config: { integrator: 'yoshida4', dt: 1e-4, softening: 1e-6, timescale: 1 },
-    bodies: [],
+    store: bodyStore.fromBodies([]),
     simTime: 0,
     running: false,
     timescale: 1,
   }
 }
 
-function cloneBody(b: EngineBody): EngineBody {
-  return { id: b.id, mass: b.mass, pos: [...b.pos], vel: [...b.vel] }
-}
-
-// Build a fresh frame. Fresh Float64Arrays every call because the buffers are
-// transferred (detached) on postMessage — reusing them would post a dead buffer.
-function buildFrame(state: EngineState): FramePayload {
-  const n = state.bodies.length
-  const positions = new Float64Array(3 * n)
-  const velocities = new Float64Array(3 * n)
-  for (let i = 0; i < n; i++) {
-    const b = state.bodies[i]
-    positions[3 * i] = b.pos[0]
-    positions[3 * i + 1] = b.pos[1]
-    positions[3 * i + 2] = b.pos[2]
-    velocities[3 * i] = b.vel[0]
-    velocities[3 * i + 1] = b.vel[1]
-    velocities[3 * i + 2] = b.vel[2]
-  }
-  return { simTime: state.simTime, positions, velocities }
-}
-
 function frameOut(state: EngineState): EngineOutMessage {
-  return { type: 'frame', ...buildFrame(state) }
+  return { type: 'frame', simTime: state.simTime, ...bodyStore.frameArrays(state.store) }
 }
 
 function errorOut(message: string): EngineOutMessage {
@@ -80,7 +58,7 @@ export function handleMessage(
       return {
         state: {
           config: msg.config,
-          bodies: msg.bodies.map(cloneBody),
+          store: bodyStore.fromBodies(msg.bodies),
           simTime: 0,
           running: false,
           timescale: msg.config.timescale,
@@ -105,46 +83,41 @@ export function handleMessage(
     }
 
     case 'addBody':
-      if (state.bodies.some((b) => b.id === msg.body.id)) {
+      if (bodyStore.indexOf(state.store, msg.body.id) !== -1) {
         return {
           state,
           out: [errorOut(`addBody: id '${msg.body.id}' already exists`)],
         }
       }
       return {
-        state: { ...state, bodies: [...state.bodies, cloneBody(msg.body)] },
+        state: { ...state, store: bodyStore.addBody(state.store, msg.body) },
         out: [],
       }
 
     case 'removeBody':
-      if (!state.bodies.some((b) => b.id === msg.id)) {
+      if (bodyStore.indexOf(state.store, msg.id) === -1) {
         return { state, out: [errorOut(`removeBody: no body '${msg.id}'`)] }
       }
       return {
-        state: { ...state, bodies: state.bodies.filter((b) => b.id !== msg.id) },
+        state: { ...state, store: bodyStore.removeBody(state.store, msg.id) },
         out: [],
       }
 
-    case 'updateBody': {
-      const index = state.bodies.findIndex((b) => b.id === msg.id)
-      if (index === -1) {
+    case 'updateBody':
+      if (bodyStore.indexOf(state.store, msg.id) === -1) {
         return { state, out: [errorOut(`updateBody: no body '${msg.id}'`)] }
-      }
-      const current = state.bodies[index]
-      const updated: EngineBody = {
-        id: current.id,
-        mass: msg.mass ?? current.mass,
-        pos: msg.pos ? [...msg.pos] : [...current.pos],
-        vel: msg.vel ? [...msg.vel] : [...current.vel],
       }
       return {
         state: {
           ...state,
-          bodies: state.bodies.map((b, i) => (i === index ? updated : b)),
+          store: bodyStore.updateBody(state.store, msg.id, {
+            mass: msg.mass,
+            pos: msg.pos,
+            vel: msg.vel,
+          }),
         },
         out: [],
       }
-    }
 
     case 'requestSnapshot':
       return { state, out: [frameOut(state)] }
