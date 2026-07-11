@@ -3,7 +3,7 @@
 Living build state. Claude Code: read this FIRST every session, update it LAST every session. Keep it short — this is a dashboard, not a diary. Prune stale entries.
 
 ## Current position
-**Phase 1 IN PROGRESS.** Steps **1.1–1.3 DONE.** Next: **1.4 (velocity-Verlet integrator — KDK, dt=1e-4 yr)**.
+**Phase 1 IN PROGRESS.** Steps **1.1–1.4 DONE.** Next: **1.5 (Yoshida 4th-order integrator — triple-Verlet composition; default integrator)**.
 
 ## Completed steps
 - 0.1 Scaffold — Vite react-ts, strict TS, ESLint+Prettier, vitest, first commit, deployed to Vercel.
@@ -18,12 +18,13 @@ Living build state. Claude Code: read this FIRST every session, update it LAST e
 - 1.1 Worker + protocol — engine split into: protocol.ts (types/messages/factories/transferables; added angularMomentumDriftRel to DiagnosticsPayload), engine.core.ts (PURE reducer handleMessage(state,msg)→{state,out[]}, unit-tested), engine.worker.ts (thin self glue), engineClient.ts (typed wrapper, tracks id↔slot order, WorkerLike seam for testing). 1.1 is PLUMBING ONLY — no forces/integrator yet (1.3/1.4); stepOnce advances the clock + emits a frame, bodies static. 14 tests (core + client via fake worker).
 - 1.2 State layout — src/engine/state.ts: structure-of-arrays BodyArrays { n, ids[], mass[n], pos/vel/acc[3n] Float64Array }; pure fromBodies/toBodies/indexOf/addBody/removeBody(rebuild)/updateBody/frameArrays. engine.core refactored from EngineBody[] to `store: BodyArrays` (frame output unchanged, so client tests untouched). 8 store tests + core tests updated.
 - 1.3 Force kernel — src/engine/forces.ts: computeAccelerations(n,mass,pos,acc,ε,G) pairwise Newtonian + Plummer softening, symmetric (Newton 3rd law) n(n-1)/2 loop, writes acc in place; computeForces(store,ε) convenience. 8 tests: ±G at 1 AU, 1/r² falloff, m·a equal/opposite, superposition cancels, softening caps the 1/r² singularity.
+- 1.4 Velocity-Verlet — src/engine/integrators.ts: verletStep(store,dt,ε,G) KDK (half-kick/drift/recompute/half-kick), PRECONDITION store.acc primed (computeForces once), maintains invariant → 1 force-eval/step. 5 tests: circular orbit closes after 1 period, radius stays ~1 AU, energy drift <1e-4 over 2 orbits, momentum conserved, determinism bit-identical.
 
 ## Deployed URL
 https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/simuverse`, manual `vercel --prod` deploy)
 
 ## Test suite status
-`pnpm test` green — 12 files, 124 tests (+ forces). `pnpm lint` and `pnpm build` also green.
+`pnpm test` green — 13 files, 129 tests (+ integrators). `pnpm lint` and `pnpm build` also green.
 
 ## Known issues / deviations from PLAN
 - Template shipped **oxlint** (Vite 8 default) with no Prettier; replaced with locked-stack **ESLint + Prettier** per §3. Compliance, not a deviation.
@@ -41,11 +42,11 @@ https://simuverse-snowy.vercel.app (Vercel project `ml-chikarupatis-projects/sim
 (none)
 
 ## Next actions
-1. **Step 1.4 — velocity-Verlet:** src/engine/integrators.ts — kick-drift-kick, fixed dt (default 1e-4 yr), using forces.computeForces. One `verletStep(store, dt, ε, G)` mutating a working store. Test: energy roughly conserved over a circular orbit; a=1AU/1M☉ orbit stays near-circular.
-2. Then 1.5 (Yoshida4) → 1.6 (diagnostics) → 1.7 (sim loop) → 1.8 (validation → VALIDATION.md) → 1.9 (bench).
+1. **Step 1.5 — Yoshida 4th-order:** add yoshida4Step to integrators.ts — triple-Verlet composition, w₁=1/(2−2^{1/3}), w₀=−2^{1/3}/(2−2^{1/3}), substeps (w₁,w₀,w₁). Selectable via config.integrator; default yoshida4. Test: energy drift far below verlet on the same orbit.
+2. Then 1.6 (diagnostics) → 1.7 (sim loop) → 1.8 (validation → VALIDATION.md) → 1.9 (bench).
 3. Owner: decide whether to connect the GitHub repo in the Vercel dashboard for auto-deploy on push (currently manual `vercel --prod`).
 
 ## Session log (newest first — one line per session)
-- 2026-07-11: Recovered context after session loss (folder renamed Simuverse- → Simuverse). Steps 1.1 (protocol/core/worker/client) + 1.2 (SoA state) + 1.3 (force kernel) done. 124 tests green.
+- 2026-07-11: Recovered context after session loss (folder renamed Simuverse- → Simuverse). Steps 1.1–1.4 done (protocol/core/worker/client, SoA state, force kernel, velocity-Verlet). 129 tests green; orbit closes + energy/momentum conserved.
 - 2026-07-10 (session 2): Phase 0 COMPLETE. Resolved OPEN Q1 (Option A: vis-viva insert glue built as capstone in src/commands/insert.ts) and OPEN Q2 (objectRemoved kind added to LogEventKindSchema). Phase 0 acceptance test comprehensive (insert.test.ts:41–78). Ready for Phase 1.
 - 2026-07-10: Steps 0.1–0.8 done — Phase 0 sub-steps complete (75 tests green). Two open questions flagged: vis-viva insert glue (Q1, gates Phase 0 acceptance) and objectRemoved log kind (Q2).
