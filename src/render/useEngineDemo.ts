@@ -15,8 +15,11 @@ export function useEngineDemo(): void {
         .getState()
         .pushFrame({ simTime: f.simTime, positions: f.positions }),
     )
+    // timescale 0.15 sim-yr/s: with the REAL solar-inner values, Mercury laps
+    // in ~1.6 s and Earth in ~6.7 s — fast enough to read the motion, slow
+    // enough that flares/clouds/aurora evolve gracefully instead of strobing.
     client.init(
-      { integrator: 'yoshida4', dt: 1e-4, softening: 1e-6, timescale: 0.5 },
+      { integrator: 'yoshida4', dt: 1e-4, softening: 1e-6, timescale: 0.15 },
       DEMO_ENGINE_BODIES,
     )
     useFrameStore.getState().setOrder(client.getOrder())

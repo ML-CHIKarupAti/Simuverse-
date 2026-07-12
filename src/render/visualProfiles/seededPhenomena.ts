@@ -35,8 +35,12 @@ export interface FlareState {
   angleRad: number // seeded surface position, fixed per object
 }
 
-const FLARE_PERIOD_YR = 0.18 // recurrence cadence, in simulated years
-const FLARE_DURATION_YR = 0.03 // how long a single flare lasts
+// Cadence is tuned for WATCHABILITY at typical dev/demo timescales (~0.1–0.5
+// sim-yr per real-second): a flare ramps over seconds of wall clock rather than
+// strobing. Real flares last minutes–hours; at these timescales that would be
+// sub-frame, so the schedule is openly illustrative (like every flare visual).
+export const FLARE_PERIOD_YR = 1.6 // recurrence cadence, in simulated years
+export const FLARE_DURATION_YR = 0.5 // how long a single flare lasts
 
 // Deterministic recurring flare state at a given simulated time. Each object
 // gets its own seeded phase offset and surface angle (derived once from its id

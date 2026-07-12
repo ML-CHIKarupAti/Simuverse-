@@ -86,22 +86,24 @@ export const VISUAL_PROFILES: Record<VisualProfileKey, VisualProfileSpec> = {
   venus: {
     key: 'venus',
     objectType: 'planet',
-    // Identity every tier: pale-gold, fully cloud-covered, thick hazy rim.
-    // No blue, ever. Maximal just makes the deck denser and more turbulent.
+    // Identity every tier: bright orange-gold, fully cloud-covered, thick hazy
+    // rim (owner-tuned warmer than the real pale-cream deck so Venus reads as
+    // Venus at a glance). No blue, ever. Maximal just makes the deck denser
+    // and more turbulent.
     restrained: {
-      baseColor: '#c9b57e',
-      cloudLayer: { tint: '#e8d9a0', density: 0.55, turbulence: 0.35, flowSpeed: 0.5 },
-      atmosphereRim: { color: '#f0d080', intensity: 0.35, power: 2.4 },
+      baseColor: '#cf9a52',
+      cloudLayer: { tint: '#e6c184', density: 0.55, turbulence: 0.35, flowSpeed: 0.5 },
+      atmosphereRim: { color: '#f0c070', intensity: 0.35, power: 2.4 },
     },
     cinematic: {
-      baseColor: '#c9b57e',
-      cloudLayer: { tint: '#ecdda6', density: 0.68, turbulence: 0.5, flowSpeed: 0.7 },
-      atmosphereRim: { color: '#f2d488', intensity: 0.55, power: 2.2 },
+      baseColor: '#d69f54',
+      cloudLayer: { tint: '#ecc88c', density: 0.68, turbulence: 0.5, flowSpeed: 0.7 },
+      atmosphereRim: { color: '#f2c678', intensity: 0.55, power: 2.2 },
     },
     maximal: {
-      baseColor: '#c9b57e',
-      cloudLayer: { tint: '#f2e6b8', density: 0.85, turbulence: 0.75, flowSpeed: 0.9 },
-      atmosphereRim: { color: '#f6dc94', intensity: 0.75, power: 2.0 },
+      baseColor: '#dda658',
+      cloudLayer: { tint: '#f2d098', density: 0.85, turbulence: 0.75, flowSpeed: 0.9 },
+      atmosphereRim: { color: '#f6cc84', intensity: 0.75, power: 2.0 },
     },
     illustrativeCopy:
       'Illustrative — visual only, no physics. The dense pale-gold cloud deck and thick atmospheric rim are decorative procedural layers, not simulated super-rotation or atmospheric chemistry.',
@@ -112,9 +114,9 @@ export const VISUAL_PROFILES: Record<VisualProfileKey, VisualProfileSpec> = {
     // Identity every tier: airless grey rock. A real meshStandardMaterial takes
     // the scene light, so a harsh day/night terminator falls out for free.
     // Spectacle escalates only via surface-detail contrast.
-    restrained: { baseColor: '#8f8983', rockyDetail: { contrast: 0.28 } },
-    cinematic: { baseColor: '#9c9490', rockyDetail: { contrast: 0.4 } },
-    maximal: { baseColor: '#a39a94', rockyDetail: { contrast: 0.55 } },
+    restrained: { baseColor: '#8a7d6d', rockyDetail: { contrast: 0.28 } },
+    cinematic: { baseColor: '#988a78', rockyDetail: { contrast: 0.4 } },
+    maximal: { baseColor: '#a29380', rockyDetail: { contrast: 0.55 } },
     illustrativeCopy:
       'Illustrative — visual only, no physics. Surface roughness and crater cues are decorative procedural noise; no real elevation data is modelled. The sharp day/night terminator is real Lambert shading from the scene light.',
   },

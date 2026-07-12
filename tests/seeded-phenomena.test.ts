@@ -6,7 +6,10 @@
 // pure schedule function only; they make no claim about the physics engine.
 
 import { describe, it, expect } from 'vitest'
-import { flareStateAt } from '../src/render/visualProfiles/seededPhenomena'
+import {
+  flareStateAt,
+  FLARE_PERIOD_YR,
+} from '../src/render/visualProfiles/seededPhenomena'
 
 describe('flareStateAt — deterministic seeded schedule', () => {
   it('is a pure function of (objectId, seed, simTime)', () => {
@@ -37,7 +40,7 @@ describe('flareStateAt — deterministic seeded schedule', () => {
   })
 
   it('intensity stays within [0,1] and the schedule is periodic', () => {
-    const PERIOD = 0.18 // FLARE_PERIOD_YR
+    const PERIOD = FLARE_PERIOD_YR
     for (let i = 0; i < 200; i++) {
       const t = i * 0.011
       const s = flareStateAt('sun', 99, t)
