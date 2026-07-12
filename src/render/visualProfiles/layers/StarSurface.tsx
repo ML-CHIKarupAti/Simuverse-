@@ -156,14 +156,18 @@ function CoronaShell({
         transparent: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
-        side: THREE.BackSide,
+        // FrontSide (not BackSide): the fresnel term is ~0 where the shell
+        // faces the camera and ~1 at its silhouette, so the centre stays
+        // transparent (the star shows through) and only a bright RIM ring
+        // glows around the disc — a corona halo, not a flat grey filled disc.
+        side: THREE.FrontSide,
         toneMapped: false,
       }),
     [color, intensity, power],
   )
   return (
     <mesh scale={scale}>
-      <sphereGeometry args={[radius, 32, 32]} />
+      <sphereGeometry args={[radius, 48, 48]} />
       <primitive object={material} attach="material" />
     </mesh>
   )

@@ -18,7 +18,9 @@ import type { RenderBody } from './demoScene'
 // origin, so a rebase (only past 5000 units — never in the Phase-2 demo) would
 // misplace the existing trail. Fine for now; when the origin actually engages,
 // shift the buffers by the rebase delta.
-const SAMPLE_EVERY = 4
+// Sample every other frame: dense enough that even the fast inner planets draw
+// a smooth curve rather than a coarse chord-polygon at the demo timescale.
+const SAMPLE_EVERY = 2
 
 export function Trail({ body }: { body: RenderBody }) {
   const cap = useRenderMode((s) => RENDER_MODE_PRESETS[s.mode].trailLength)
