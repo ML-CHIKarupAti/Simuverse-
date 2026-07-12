@@ -6,15 +6,18 @@ import { OrientationGizmo } from './OrientationGizmo'
 import { OrientationReadout } from './OrientationReadout'
 import { Bodies } from './Bodies'
 import { Starfield } from './Starfield'
+import { Postprocessing } from './Postprocessing'
 import { useEngineDemo } from './useEngineDemo'
 import { DEMO_RENDER_BODIES, isDemoMode } from './demoScene'
 import { useSelectionStore } from '../state/selectionStore'
 import { useOrientationStore } from '../state/orientationStore'
 import { useTrailsVisible } from '../state/trailsVisibleStore'
+import { useOrbitPathVisible } from '../state/orbitPathVisibleStore'
+import { RenderModeSelector } from '../ui/RenderModeSelector'
 
 // Full-bleed 3D canvas — the hero (PLAN §2.1, §8.5). Fixed behind all UI. Clear
 // color #05070B is deliberately DARKER than the chrome (#0B0E14) so the
-// starfield (2.5) reads as the deepest layer. Starfield/trails/bloom land next.
+// starfield reads as the deepest layer.
 export function CanvasRoot() {
   useEngineDemo() // temporary Phase-2 dev scene (see useEngineDemo)
   return (
@@ -46,15 +49,19 @@ export function CanvasRoot() {
         <FloatingOrigin />
         <OrientationGizmo />
         <OrientationReadout />
+        <Postprocessing />
       </Canvas>
       <OrientationOverlay />
+      <RenderModeSelector />
       {isDemoMode() && <TrailsToggle />}
+      {isDemoMode() && <OrbitPathToggle />}
     </>
   )
 }
 
-// TEMPORARY dev-only toggle (see trailsVisibleStore) so trails can be A/B'd
-// live while tuning. Replaced by the real \trails command in Phase 3.
+// TEMPORARY dev-only toggles (see trailsVisibleStore / orbitPathVisibleStore)
+// so trails and the full-orbit overlay can be A/B'd live while tuning.
+// Replaced by the real \trails command / top-bar controls in Phase 3.
 function TrailsToggle() {
   const visible = useTrailsVisible((s) => s.visible)
   const toggle = useTrailsVisible((s) => s.toggle)
@@ -77,6 +84,32 @@ function TrailsToggle() {
       }}
     >
       trails: {visible ? 'on' : 'off'} (dev)
+    </button>
+  )
+}
+
+function OrbitPathToggle() {
+  const visible = useOrbitPathVisible((s) => s.visible)
+  const toggle = useOrbitPathVisible((s) => s.toggle)
+  return (
+    <button
+      onClick={toggle}
+      style={{
+        position: 'fixed',
+        left: 16,
+        bottom: 50,
+        fontFamily: 'ui-monospace, monospace',
+        fontSize: 11,
+        letterSpacing: '0.06em',
+        color: '#8b95a7',
+        background: 'rgba(14,17,24,0.75)',
+        border: '1px solid #232a36',
+        borderRadius: 6,
+        padding: '6px 10px',
+        cursor: 'pointer',
+      }}
+    >
+      orbit paths: {visible ? 'on' : 'off'} (dev)
     </button>
   )
 }
