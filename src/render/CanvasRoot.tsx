@@ -6,7 +6,6 @@ import { OrientationGizmo } from './OrientationGizmo'
 import { OrientationReadout } from './OrientationReadout'
 import { Bodies } from './Bodies'
 import { Starfield } from './Starfield'
-import { Postprocessing } from './Postprocessing'
 import { useEngineDemo } from './useEngineDemo'
 import { DEMO_RENDER_BODIES, isDemoMode } from './demoScene'
 import { useSelectionStore } from '../state/selectionStore'
@@ -49,7 +48,6 @@ export function CanvasRoot() {
         <FloatingOrigin />
         <OrientationGizmo />
         <OrientationReadout />
-        <Postprocessing />
       </Canvas>
       <OrientationOverlay />
       <RenderModeSelector />
